@@ -183,13 +183,14 @@ export default function StreamingChat({}) {
         removeSilence: false,
         timeSlice: 1_000, // 1 second
         streaming: true,
-        nonStop: true,
+        nonStop: false,
         // stopTimeout: 50000,
         whisperConfig: {
             language: "en",
         },
     });
 
+ 
     const previousTranscript = usePrevious(transcript);
 
     // Trigger this function when you know the file has been updated
@@ -261,7 +262,7 @@ export default function StreamingChat({}) {
 
                     // if(speaking) mean if USER is speaking
                     window.speechSynthesis.cancel();
-                    alert("bruhh")
+                    alert("bruhh " + lastStartIdx + " " + lastEndIdx)
                 }
 
                 if (
@@ -283,7 +284,8 @@ export default function StreamingChat({}) {
                 }
             }
         })();
-    }, [transcript, loading, clickedButton]);
+    }, [transcript]);
+    // }, [transcript, loading, clickedButton]);
 
     // TODO: This doesn't work to fix the mobile autoplay problems :(
     useEffect(() => {
