@@ -47,7 +47,7 @@ export const PorcupineChat = () => {
   const harkRef = useRef<Harker>()
   const notiTimeoutRef = useRef<NodeJS.Timeout>()
   const notiIntervalRef = useRef<NodeJS.Timer>()
-  const speechRef = useRef<SpeechSynthesisUtterance>()
+  // const speechRef = useRef<SpeechSynthesisUtterance>()
   const startKeywordDetection = useRef<PorcupineDetection>()
   const streamRef = useRef<MediaStream>()
 
@@ -117,9 +117,9 @@ export const PorcupineChat = () => {
       showErrorMessage(NOTI_MESSAGES.gpt.error)
     },
     onFinish: (message) => {
-      if (message.role === 'assistant' && message.content) {
-        startUttering(message.content)
-      }
+      // if (message.role === 'assistant' && message.content) {
+      //   startUttering(message.content)
+      // }
       transcript.blob = undefined
       setIsLoading(false)
       setIsSending(false)
@@ -524,44 +524,44 @@ export const PorcupineChat = () => {
 
   console.log({ porcupineAccessKey, saved: localStorage.getItem(PORCUPINE_STORAGE_KEY) })
 
-  const startUttering = (text: string) => {
-    // console.log({ speechRef: speechRef.current })
-    if (!text) {
-      return
-    }
-    if ('SpeechSynthesisUtterance' in window) {
-      if (!speechRef.current) {
-        speechRef.current = new SpeechSynthesisUtterance()
-        speechRef.current.addEventListener('start', onStartUttering)
-        speechRef.current.addEventListener('end', onStopUttering)
-      }
-      speechRef.current.text = text
-      window.speechSynthesis.speak(speechRef.current)
-    }
-  }
+  // const startUttering = (text: string) => {
+  //   // console.log({ speechRef: speechRef.current })
+  //   if (!text) {
+  //     return
+  //   }
+  //   if ('SpeechSynthesisUtterance' in window) {
+  //     if (!speechRef.current) {
+  //       speechRef.current = new SpeechSynthesisUtterance()
+  //       speechRef.current.addEventListener('start', onStartUttering)
+  //       speechRef.current.addEventListener('end', onStopUttering)
+  //     }
+  //     speechRef.current.text = text
+  //     window.speechSynthesis.speak(speechRef.current)
+  //   }
+  // }
 
-  const toggleUnttering = () => {
-    // console.log({ isUnttering })
-    if (isUnttering) {
-      stopUttering()
-    } else {
-      const lastMessage = messages
-        .slice()
-        .reverse()
-        .find((message) => message.role === 'assistant')?.content
-      // console.log({ lastMessage })
-      if (lastMessage) {
-        startUttering(lastMessage)
-      }
-    }
-  }
+  // const toggleUnttering = () => {
+  //   // console.log({ isUnttering })
+  //   if (isUnttering) {
+  //     stopUttering()
+  //   } else {
+  //     const lastMessage = messages
+  //       .slice()
+  //       .reverse()
+  //       .find((message) => message.role === 'assistant')?.content
+  //     // console.log({ lastMessage })
+  //     if (lastMessage) {
+  //       startUttering(lastMessage)
+  //     }
+  //   }
+  // }
 
-  useEffect(() => {
-    if (speechRef.current) {
-      // change utterance speaking rate
-      speechRef.current.rate = speakingRate
-    }
-  }, [speakingRate])
+  // useEffect(() => {
+  //   if (speechRef.current) {
+  //     // change utterance speaking rate
+  //     speechRef.current.rate = speakingRate
+  //   }
+  // }, [speakingRate])
 
   useEffect(() => {
     if (chatRef.current) {
@@ -645,7 +645,7 @@ export const PorcupineChat = () => {
 
   const showErrorMessage = (message: string) => {
     setNoti({ type: 'error', message })
-    startUttering(message)
+    // startUttering(message)
   }
 
   const showSuccessMessage = (message: string) => {
@@ -681,11 +681,11 @@ export const PorcupineChat = () => {
         encoderRef.current = undefined
       }
       releaseHark()
-      if (speechRef.current) {
-        stopUttering()
-        speechRef.current.removeEventListener('start', onStartUttering)
-        speechRef.current.removeEventListener('end', onStopUttering)
-      }
+      // if (speechRef.current) {
+      //   stopUttering()
+      //   speechRef.current.removeEventListener('start', onStartUttering)
+      //   speechRef.current.removeEventListener('end', onStopUttering)
+      // }
       release()
     }
   }, [])
@@ -716,7 +716,7 @@ export const PorcupineChat = () => {
         onChangeIsAutoStop={setIsAutoStop}
         onChangeSpeakingRate={setSpeakingRate}
         onChangePorcupineAccessKey={changePorcupineAccessKey}
-        onToggleUnttering={toggleUnttering}
+        // onToggleUnttering={toggleUnttering}
       />
       {isGPTGenerating || canReloadGPTResponse ? (
         <button

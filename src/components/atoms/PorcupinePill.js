@@ -10,7 +10,7 @@ export default function PorcupinePill({
   onChangeIsAutoStop,
   onChangePorcupineAccessKey,
   onChangeSpeakingRate,
-  onToggleUnttering,
+  onToggleUnttering = false,
 }) {
   return (
     <div className="flex h-10 min-w-[50%] flex-row items-center justify-center gap-4 self-center rounded-full bg-gray-300 sm:min-w-[25%]">
