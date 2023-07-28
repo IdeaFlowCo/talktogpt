@@ -662,7 +662,7 @@ export const PorcupineChat = () => {
   useEffect(() => {
     // initialize porcupine
     init(
-      'Zx+jrv16WtQogCtCGPPPDMqfzqKgPNIRrm8wW18iQ7+ZRbZhIIjPEw==',
+      porcupineAccessKey,
       [START_KEYWORD, END_KEYWORD],
       PORCUPINE_MODEL
     ).catch((porcupineError) => {
