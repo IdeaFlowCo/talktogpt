@@ -446,8 +446,8 @@ export const PorcupineChat = () => {
   const onAutoStop = async () => {
     // console.log('onAutoStop')
     stopAutoStopTimeout()
-    stopUttering()
-    playSonar()
+    // stopUttering()
+    // playSonar()
     setIsLoading(true)
     await stopRecording()
   }
@@ -475,10 +475,10 @@ export const PorcupineChat = () => {
   const onEndKeywordDetected = async () => {
     startKeywordDetection.current = undefined
     // stop auto stop timeout
-    stopUttering() // stop untterance if it is speaking
-    playSonar() // play stop keyword detection sound
+    // stopUttering() // stop untterance if it is speaking
+    // playSonar() // play stop keyword detection sound
     setIsLoading(true)
-    stopRecording() // stop useWhisper recorder
+    stopRecording().catch((err) => console.log({ err })) // stop useWhisper recorder
   }
 
   const onStartKeywordDetected = () => {
@@ -507,20 +507,20 @@ export const PorcupineChat = () => {
     }
   }, [keywordDetection])
 
-  const stopUttering = () => {
-    if (window.speechSynthesis.speaking) {
-      window.speechSynthesis.cancel()
-      setIsUnttering(false)
-    }
-  }
+  // const stopUttering = () => {
+  //   if (window.speechSynthesis.speaking) {
+  //     window.speechSynthesis.cancel()
+  //     setIsUnttering(false)
+  //   }
+  // }
 
-  const onStartUttering = () => {
-    setIsUnttering(true)
-  }
+  // const onStartUttering = () => {
+  //   setIsUnttering(true)
+  // }
 
-  const onStopUttering = () => {
-    setIsUnttering(false)
-  }
+  // const onStopUttering = () => {
+  //   setIsUnttering(false)
+  // }
 
   console.log({ porcupineAccessKey, saved: localStorage.getItem(PORCUPINE_STORAGE_KEY) })
 
@@ -757,7 +757,7 @@ export const PorcupineChat = () => {
         onStartPorcupine={startPorcupine}
         onStopPorcupine={stopPorcupine}
         onStopRecording={stopRecording}
-        onStopUttering={stopUttering}
+        // onStopUttering={stopUttering}
         onSubmitQuery={submitTranscript}
       />
     </div>

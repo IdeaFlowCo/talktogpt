@@ -12,7 +12,7 @@ export default function PorcupineInput({
   onStartPorcupine,
   onStopPorcupine,
   onStopRecording,
-  onStopUttering,
+  onStopUttering = false,
   onSubmitQuery,
 }) {
   const waveRef = useRef()
