@@ -522,18 +522,22 @@ export const PorcupineChat = () => {
     setIsUnttering(false)
   }
 
+  console.log({ porcupineAccessKey, saved: localStorage.getItem(PORCUPINE_STORAGE_KEY) })
+
   const startUttering = (text: string) => {
     // console.log({ speechRef: speechRef.current })
     if (!text) {
       return
     }
-    if (!speechRef.current) {
-      speechRef.current = new SpeechSynthesisUtterance()
-      speechRef.current.addEventListener('start', onStartUttering)
-      speechRef.current.addEventListener('end', onStopUttering)
+    if ('SpeechSynthesisUtterance' in window) {
+      if (!speechRef.current) {
+        speechRef.current = new SpeechSynthesisUtterance()
+        speechRef.current.addEventListener('start', onStartUttering)
+        speechRef.current.addEventListener('end', onStopUttering)
+      }
+      speechRef.current.text = text
+      window.speechSynthesis.speak(speechRef.current)
     }
-    speechRef.current.text = text
-    window.speechSynthesis.speak(speechRef.current)
   }
 
   const toggleUnttering = () => {
@@ -658,13 +662,13 @@ export const PorcupineChat = () => {
   useEffect(() => {
     // initialize porcupine
     init(
-      porcupineAccessKey,
+      '6c9AHqtH7tH/J/V0XqEGPraLVBCPmpELcRGC94Jm8rTBjdpTvq6SEg==',
       [START_KEYWORD, END_KEYWORD],
       PORCUPINE_MODEL
     ).catch((porcupineError) => {
       console.warn({ porcupineError })
     })
-  }, [porcupineAccessKey])
+  }, [])
 
   useEffect(() => {
     // release resource on component unmount

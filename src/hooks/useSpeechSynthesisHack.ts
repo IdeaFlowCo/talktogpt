@@ -7,10 +7,12 @@ export default function useSpeechSynthesisHack() {
       if (hasEnabledVoice) {
         return
       }
-      const lecture = new SpeechSynthesisUtterance('hello')
-      lecture.volume = 0
-      speechSynthesis.speak(lecture)
-      hasEnabledVoice = true
+      if ('SpeechSynthesisUtterance' in window) {
+        const lecture = new SpeechSynthesisUtterance('hello')
+        lecture.volume = 0
+        speechSynthesis.speak(lecture)
+        hasEnabledVoice = true
+      }
     })
   }, [])
 }
