@@ -662,7 +662,7 @@ export const PorcupineChat = () => {
   useEffect(() => {
     // initialize porcupine
     init(
-      '6c9AHqtH7tH/J/V0XqEGPraLVBCPmpELcRGC94Jm8rTBjdpTvq6SEg==',
+      'Zx+jrv16WtQogCtCGPPPDMqfzqKgPNIRrm8wW18iQ7+ZRbZhIIjPEw==',
       [START_KEYWORD, END_KEYWORD],
       PORCUPINE_MODEL
     ).catch((porcupineError) => {
