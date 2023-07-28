@@ -485,7 +485,7 @@ export const PorcupineChat = () => {
     startKeywordDetection.current = keywordDetection
     // start auto stop timeout
     stopUttering() // stop utterance if it is speaking
-    playPing() // play start keyword detection sound
+    // playPing() // play start keyword detection sound
     startRecording().catch((err) => console.log({ err })) // start useWhisper recorder
   }
 
