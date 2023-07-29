@@ -45,9 +45,9 @@ export const PorcupineChat = () => {
   const chatRef = useRef<HTMLDivElement>()
   const encoderRef = useRef<Encoder>()
   const harkRef = useRef<Harker>()
-  const notiTimeoutRef = useRef<NodeJS.Timeout>()
-  const notiIntervalRef = useRef<NodeJS.Timer>()
-  // const speechRef = useRef<SpeechSynthesisUtterance>()
+  // const notiTimeoutRef = useRef<NodeJS.Timeout>()
+  // const notiIntervalRef = useRef<NodeJS.Timer>()
+  const speechRef = useRef<SpeechSynthesisUtterance>()
   const startKeywordDetection = useRef<PorcupineDetection>()
   const streamRef = useRef<MediaStream>()
 
@@ -117,9 +117,9 @@ export const PorcupineChat = () => {
       showErrorMessage(NOTI_MESSAGES.gpt.error)
     },
     onFinish: (message) => {
-      // if (message.role === 'assistant' && message.content) {
-      //   startUttering(message.content)
-      // }
+      if (message.role === 'assistant' && message.content) {
+        startUttering(message.content)
+      }
       transcript.blob = undefined
       setIsLoading(false)
       setIsSending(false)
@@ -446,8 +446,8 @@ export const PorcupineChat = () => {
   const onAutoStop = async () => {
     // console.log('onAutoStop')
     stopAutoStopTimeout()
-    // stopUttering()
-    // playSonar()
+    stopUttering()
+    playSonar()
     setIsLoading(true)
     await stopRecording()
   }
@@ -475,8 +475,8 @@ export const PorcupineChat = () => {
   const onEndKeywordDetected = async () => {
     startKeywordDetection.current = undefined
     // stop auto stop timeout
-    // stopUttering() // stop untterance if it is speaking
-    // playSonar() // play stop keyword detection sound
+    stopUttering() // stop untterance if it is speaking
+    playSonar() // play stop keyword detection sound
     setIsLoading(true)
     stopRecording().catch((err) => console.log({ err })) // stop useWhisper recorder
   }
@@ -484,8 +484,8 @@ export const PorcupineChat = () => {
   const onStartKeywordDetected = () => {
     startKeywordDetection.current = keywordDetection
     // start auto stop timeout
-    // stopUttering() // stop utterance if it is speaking
-    // playPing() // play start keyword detection sound
+    stopUttering() // stop utterance if it is speaking
+    playPing() // play start keyword detection sound
     startRecording().catch((err) => console.log({ err })) // start useWhisper recorder
   }
 
@@ -507,61 +507,70 @@ export const PorcupineChat = () => {
     }
   }, [keywordDetection])
 
-  // const stopUttering = () => {
-  //   if (window.speechSynthesis.speaking) {
-  //     window.speechSynthesis.cancel()
-  //     setIsUnttering(false)
-  //   }
-  // }
+  const stopUttering = () => {
+    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel()
+      setIsUnttering(false)
+    } else if ('ReactNativeWebView' in window) {
+      // @ts-ignore: this is for react-native-webview
+      window.ReactNativeWebView.postMessage(JSON.stringify({'type': 'speaking-stop'}))
+    }
+  }
 
-  // const onStartUttering = () => {
-  //   setIsUnttering(true)
-  // }
+  const onStartUttering = () => {
+    setIsUnttering(true)
+  }
 
-  // const onStopUttering = () => {
-  //   setIsUnttering(false)
-  // }
+  const onStopUttering = () => {
+    setIsUnttering(false)
+  }
 
   console.log({ porcupineAccessKey, saved: localStorage.getItem(PORCUPINE_STORAGE_KEY) })
 
-  // const startUttering = (text: string) => {
-  //   // console.log({ speechRef: speechRef.current })
-  //   if (!text) {
-  //     return
-  //   }
-  //   if ('SpeechSynthesisUtterance' in window) {
-  //     if (!speechRef.current) {
-  //       speechRef.current = new SpeechSynthesisUtterance()
-  //       speechRef.current.addEventListener('start', onStartUttering)
-  //       speechRef.current.addEventListener('end', onStopUttering)
-  //     }
-  //     speechRef.current.text = text
-  //     window.speechSynthesis.speak(speechRef.current)
-  //   }
-  // }
+  const startUttering = (text: string) => {
+    // console.log({ speechRef: speechRef.current })
+    if (!text) {
+      return
+    }
+    if ('SpeechSynthesisUtterance' in window) {
+      if (!speechRef.current) {
+        speechRef.current = new SpeechSynthesisUtterance()
+        speechRef.current.addEventListener('start', onStartUttering)
+        speechRef.current.addEventListener('end', onStopUttering)
+      }
+      speechRef.current.text = text
+      window.speechSynthesis.speak(speechRef.current)
+    } else if ('ReactNativeWebView' in window) {
+      // @ts-ignore: this is for react-native-webview
+      window.ReactNativeWebView.postMessage(JSON.stringify({'type': 'speaking-start', 'data': text}))
+    }
+  }
 
-  // const toggleUnttering = () => {
-  //   // console.log({ isUnttering })
-  //   if (isUnttering) {
-  //     stopUttering()
-  //   } else {
-  //     const lastMessage = messages
-  //       .slice()
-  //       .reverse()
-  //       .find((message) => message.role === 'assistant')?.content
-  //     // console.log({ lastMessage })
-  //     if (lastMessage) {
-  //       startUttering(lastMessage)
-  //     }
-  //   }
-  // }
+  const toggleUnttering = () => {
+    // console.log({ isUnttering })
+    if (isUnttering) {
+      stopUttering()
+    } else {
+      const lastMessage = messages
+        .slice()
+        .reverse()
+        .find((message) => message.role === 'assistant')?.content
+      // console.log({ lastMessage })
+      if (lastMessage) {
+        startUttering(lastMessage)
+      }
+    }
+  }
 
-  // useEffect(() => {
-  //   if (speechRef.current) {
-  //     // change utterance speaking rate
-  //     speechRef.current.rate = speakingRate
-  //   }
-  // }, [speakingRate])
+  useEffect(() => {
+    if ('SpeechSynthesisUtterance' in window && speechRef.current) {
+      // change utterance speaking rate
+      speechRef.current.rate = speakingRate
+    } else if ('ReactNativeWebView' in window) {
+      // @ts-ignore: this is for react-native-webview
+      window.ReactNativeWebView.postMessage(JSON.stringify({'type': 'speaking-rate', 'data': speakingRate}))
+    }
+  }, [speakingRate])
 
   useEffect(() => {
     if (chatRef.current) {
@@ -645,7 +654,7 @@ export const PorcupineChat = () => {
 
   const showErrorMessage = (message: string) => {
     setNoti({ type: 'error', message })
-    // startUttering(message)
+    startUttering(message)
   }
 
   const showSuccessMessage = (message: string) => {
@@ -670,9 +679,21 @@ export const PorcupineChat = () => {
     })
   }, [])
 
+  const onReactNativeWebviewMessage = (e: any) => {
+    console.log(`onReactNativeWebviewMessage type:${e.data.type} data:${e.data.data}`)
+    if (e.data) {
+      if (e.data?.type === 'speaking') {
+        console.log('is speaking')
+        setIsUnttering(e.data.data)
+      }
+    }
+  }
+
   useEffect(() => {
+    window.addEventListener('message', onReactNativeWebviewMessage)
     // release resource on component unmount
     return () => {
+      window.removeEventListener('message', onReactNativeWebviewMessage)
       // clear auto stop timeout instance
       stopAutoStopTimeout()
       // flush out lamejs
@@ -681,11 +702,11 @@ export const PorcupineChat = () => {
         encoderRef.current = undefined
       }
       releaseHark()
-      // if (speechRef.current) {
-      //   stopUttering()
-      //   speechRef.current.removeEventListener('start', onStartUttering)
-      //   speechRef.current.removeEventListener('end', onStopUttering)
-      // }
+      if (speechRef.current) {
+        stopUttering()
+        speechRef.current.removeEventListener('start', onStartUttering)
+        speechRef.current.removeEventListener('end', onStopUttering)
+      }
       release()
     }
   }, [])
@@ -716,7 +737,7 @@ export const PorcupineChat = () => {
         onChangeIsAutoStop={setIsAutoStop}
         onChangeSpeakingRate={setSpeakingRate}
         onChangePorcupineAccessKey={changePorcupineAccessKey}
-        // onToggleUnttering={toggleUnttering}
+        onToggleUnttering={toggleUnttering}
       />
       {isGPTGenerating || canReloadGPTResponse ? (
         <button
@@ -757,7 +778,7 @@ export const PorcupineChat = () => {
         onStartPorcupine={startPorcupine}
         onStopPorcupine={stopPorcupine}
         onStopRecording={stopRecording}
-        // onStopUttering={stopUttering}
+        onStopUttering={stopUttering}
         onSubmitQuery={submitTranscript}
       />
     </div>
