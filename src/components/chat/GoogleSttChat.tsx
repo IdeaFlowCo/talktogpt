@@ -92,7 +92,12 @@ export const GoogleSttChat = () => {
             return
         }
         setIsUttering(true)
-        if (!isAndroid) {
+        if (isAndroid && globalThis.ReactNativeWebView) {
+            globalThis.ReactNativeWebView.postMessage(JSON.stringify({
+                type: "speaking-start",
+                data: text, 
+            }))
+        } else {
             if (!speechRef.current) {
                 speechRef.current = new SpeechSynthesisUtterance()
                 speechRef.current.addEventListener('start', onStartUttering)
@@ -101,11 +106,6 @@ export const GoogleSttChat = () => {
             speechRef.current.lang = "en-US"
             speechRef.current.text = text
             globalThis.speechSynthesis.speak(speechRef.current)
-        } else {
-            globalThis.ReactNativeWebView.postMessage(JSON.stringify({
-                type: "speaking-start",
-                data: text, 
-            }))
         }
     }
 
@@ -281,11 +281,7 @@ export const GoogleSttChat = () => {
     const prepareHark = async () => {
         if (!harkRef.current && streamRef.current) {
             const {default: harkjs} = await import('hark')
-            harkRef.current = harkjs(streamRef.current, {
-                interval: 100,
-                threshold: -60,
-                play: false,
-            })
+            harkRef.current = harkjs(streamRef.current)
             harkRef.current.on('speaking', onStartSpeaking)
             harkRef.current.on('stopped_speaking', onStopSpeaking)
         }
@@ -385,6 +381,7 @@ export const GoogleSttChat = () => {
         if (streamRef.current) {
             streamRef.current.getTracks().forEach((track) => track.stop())
         }
+        
         streamRef.current = await navigator.mediaDevices.getUserMedia({
             audio: {
                 deviceId: 'default',
@@ -451,10 +448,10 @@ export const GoogleSttChat = () => {
     }
 
     const stopUttering = () => {
-        if (!isAndroid && globalThis.speechSynthesis.speaking) {
+        if (!(isAndroid && globalThis.ReactNativeWebView) && globalThis.speechSynthesis.speaking) {
             globalThis.speechSynthesis.cancel()
         }
-        if (isAndroid) {
+        if (isAndroid && globalThis.ReactNativeWebView) {
             globalThis.ReactNativeWebView.postMessage(JSON.stringify({
                 type: "speaking-stop"
             }))
