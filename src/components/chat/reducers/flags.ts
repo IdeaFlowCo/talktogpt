@@ -1,5 +1,4 @@
 interface GoogleSttFlagsState {
-  isAutoStop: boolean;
   isListening: boolean;
   isLoading: boolean;
   isSending: boolean;
@@ -17,7 +16,6 @@ interface GoogleSttAction {
 }
 
 export enum FlagsActions {
-  TOGGLE_AUTO_STOP = 'toggle_auto_stop',
   START_LISTENING = 'start_listening',
   STOP_LISTENING = 'stop_listening',
   STOP_SENDING_CHAT = 'stop_sending_chat',
@@ -40,7 +38,6 @@ export enum FlagsActions {
 }
 
 export const initialFlagsState = {
-  isAutoStop: true,
   isListening: true,
   isLoading: false,
   isSending: false,
@@ -54,12 +51,6 @@ export const initialFlagsState = {
 
 export function flagsReducer(state: GoogleSttFlagsState, action: GoogleSttAction) {
   // console.log(action.type)
-  if (action.type === FlagsActions.TOGGLE_AUTO_STOP) {
-    return {
-      ...state,
-      isAutoStop: action.value,
-    };
-  }
   if (action.type === FlagsActions.START_LISTENING) {
     return {
       ...state,

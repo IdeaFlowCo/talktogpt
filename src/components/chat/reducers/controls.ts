@@ -1,37 +1,31 @@
 import { STOP_TIMEOUT } from "../constants";
 
 interface GoogleSttControlsState {
-  speakingRate: number;
-  autoStopTimeout: number;
+  speakingRate?: number;
+  autoStopTimeout?: number;
+  isAutoStop?: boolean;
 }
 
 export enum ControlsActions {
-  SET_AUTO_STOP_TIMEOUT = 'set_auto_stop_timeout',
-  SET_SPEANKING_RATE = 'set_speanking_rate',
+  UPDATE_SETTINGS = 'update_settings',
 }
 
 interface GoogleSttControlsAction {
   type: ControlsActions;
-  value?: number;
+  values?: GoogleSttControlsState;
 }
 
 export const initialControlsState: GoogleSttControlsState = {
   speakingRate: 1,
   autoStopTimeout: STOP_TIMEOUT,
+  isAutoStop: true,
 };
 
 export function controlsReducer(state: GoogleSttControlsState, action: GoogleSttControlsAction) {
-  // console.log(action.type)
-  if (action.type === ControlsActions.SET_AUTO_STOP_TIMEOUT) {
+  if (action.type === ControlsActions.UPDATE_SETTINGS) {
     return {
       ...state,
-      autoStopTimeout: action.value,
-    };
-  }
-  if (action.type === ControlsActions.SET_SPEANKING_RATE) {
-    return {
-      ...state,
-      speakingRate: action.value,
+      ...action.values,
     };
   }
   throw Error('Unknown action.');
