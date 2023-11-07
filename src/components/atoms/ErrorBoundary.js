@@ -1,4 +1,5 @@
 import React from 'react';
+import * as Sentry from "@sentry/react";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -17,7 +18,7 @@ class ErrorBoundary extends React.Component {
     //   in ErrorBoundary (created by App)
     //   in div (created by App)
     //   in App
-    logErrorToMyService(error, info.componentStack);
+    Sentry.withErrorBoundary(error, { componentStack: info.componentStack });
   }
 
   render() {
