@@ -1008,6 +1008,40 @@ export async function deleteMessage(id) {
 //   return response;
 // }
 
+/**** SETTINGS ****/
+/* Example query functions (modify to your needs) */
+
+// Fetch settings by user
+export function useSettingsByUser() {
+  return useQuery(
+    ["settings"],
+    () =>
+      supabase
+        .from("settings")
+        .select('*')
+        .order("created_at", { ascending: false })
+        .then(handle)
+  );
+}
+
+// Create new settings
+export async function createSettings(data) {
+  const response = await supabase.from("settings").insert([data]).then(handle);
+  return response;
+}
+
+// Update settings
+export async function updateSettings(data) {
+  const response = await supabase
+    .from("settings")
+    .update(data)
+    .eq("user_id", data.user_id)
+    .then(handle);
+  // Invalidate and refetch queries that could have old data
+  await client.invalidateQueries(["settings"]);
+  return response;
+}
+
 /**** HELPERS ****/
 
 // Get response data or throw error if there is one
