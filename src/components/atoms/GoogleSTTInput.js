@@ -31,14 +31,17 @@ export default function GoogleSTTInput({
       });
     };
     if (isRecording && !waveRef.current) {
-      playBubble()
+      playBubble();
       initWaveform();
     }
     return () => {
       waveRef.current = null;
-      document.getElementById('siri-wave').innerHTML = '';
-    }
-  }, [isRecording]);
+      const siriWave = document.getElementById('siri-wave');
+      if (siriWave) {
+        siriWave.innerHTML = '';
+      }
+    };
+  }, [isRecording, playBubble]);
 
   useEffect(() => {
     if (waveRef.current) {
