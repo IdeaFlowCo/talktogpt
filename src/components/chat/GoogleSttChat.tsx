@@ -537,16 +537,25 @@ export const GoogleSttChat = () => {
   };
 
   const toggleUttering = () => {
-    if (isUttering) {
-      stopUttering();
-    } else {
-      const lastMessage = messages
-        .slice()
-        .reverse()
-        .find((message) => message.role === 'assistant')?.content;
-      if (lastMessage) {
-        startUttering(lastMessage);
+    const lastMessage = messages
+      .slice()
+      .reverse()
+      .find((message) => message.role === 'assistant')?.content;
+
+    if (!isAndroid || (isAndroid && !globalThis.ReactNativeWebView)) {
+      if (isUttering) {
+        stopUttering();
+      } else {
+        if (lastMessage) {
+          startUttering(lastMessage);
+        }
       }
+    } else {
+      globalThis.ReactNativeWebView.postMessage(
+        JSON.stringify({
+          type: 'speaking-toggle', data: lastMessage
+        })
+      );
     }
   };
 
@@ -590,6 +599,12 @@ export const GoogleSttChat = () => {
       const { data, type } = message.data;
       if (type === 'speaking' && data === false) {
         onStopUttering();
+      }
+      if (type === 'speaking-force-stop' && data === true) {
+        stopUttering();
+      }
+      if (type === 'speaking-force-start' && data === true) {
+        flagsDispatch({ type: FlagsActions.START_UTTERING });
       }
     }
 
@@ -701,7 +716,7 @@ export const GoogleSttChat = () => {
         onChangeAutoStopTimeout={onChangeAutoStopTimeout}
         onChangeIsAutoStop={onChangeIsAutoStop}
         onChangeSpeakingRate={onChangeSpeakingRate}
-        onToggleUnttering={toggleUttering}
+        onToggleUttering={toggleUttering}
       />
       {noti ? (
         <Alert
