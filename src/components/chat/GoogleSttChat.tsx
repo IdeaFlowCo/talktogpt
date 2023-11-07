@@ -685,6 +685,14 @@ export const GoogleSttChat = () => {
   const onChangeSpeakingRate = (value: number) => {
     controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { speakingRate: value } })
     updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, speakingRate: value } })
+    if (isAndroid && globalThis.ReactNativeWebView) {
+      globalThis.ReactNativeWebView.postMessage(
+        JSON.stringify({
+          type: 'speaking-rate',
+          data: value,
+        })
+      );
+    }
   }
 
   return (
