@@ -363,7 +363,7 @@ export const GoogleSttWhisperChat = () => {
 
     switch (action?.type) {
       case 'SET_IS_AUTO_STOP':
-        flagsDispatch({ type: FlagsActions.TOGGLE_AUTO_STOP, value: action.value });
+        controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { isAutoStop: action.value } });
         break;
 
       case 'SET_MICROPHONE_OFF':
@@ -372,17 +372,18 @@ export const GoogleSttWhisperChat = () => {
 
       case 'SET_AUTO_STOP_TIMEOUT':
         if (typeof action.value === 'number') {
-          controlsDispatch({ type: ControlsActions.SET_AUTO_STOP_TIMEOUT, value: action.value })
+          controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { autoStopTimeout: action.value } })
         }
         if (typeof action.value === 'string') {
           if (action.value === 'faster') {
+            const autoStopTimeoutValue = controlsState.autoStopTimeout - 1 <= 0 ? 1 : controlsState.autoStopTimeout - 1
             controlsDispatch({
-              type: ControlsActions.SET_AUTO_STOP_TIMEOUT,
-              value: controlsState.autoStopTimeout - 1 <= 0 ? 1 : controlsState.autoStopTimeout - 1
+              type: ControlsActions.UPDATE_SETTINGS,
+              values: { autoStopTimeout: autoStopTimeoutValue }
             })
           }
           if (action.value === 'slower') {
-            controlsDispatch({ type: ControlsActions.SET_AUTO_STOP_TIMEOUT, value: controlsState.autoStopTimeout + 1 })
+            controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { autoStopTimeout: controlsState.autoStopTimeout + 1 } })
           }
         }
 
@@ -638,7 +639,7 @@ export const GoogleSttWhisperChat = () => {
 
   useEffect(() => {
     if (
-      flahsState.isAutoStop &&
+      controlsState.isAutoStop &&
       recording &&
       flahsState.isFinalData &&
       startKeywordDetectedRef.current
@@ -646,14 +647,14 @@ export const GoogleSttWhisperChat = () => {
       startAutoStopTimeout();
     }
     if (
-      (flahsState.isAutoStop && !recording) ||
+      (controlsState.isAutoStop && !recording) ||
       !flahsState.isFinalData ||
       !startKeywordDetectedRef.current
     ) {
       stopAutoStopTimeout();
     }
   }, [
-    flahsState.isAutoStop,
+    controlsState.isAutoStop,
     recording,
     flahsState.isFinalData,
     startKeywordDetectedRef.current,
@@ -672,6 +673,18 @@ export const GoogleSttWhisperChat = () => {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const onChangeAutoStopTimeout = (value: number) => {
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { autoStopTimeout: value } })
+  }
+
+  const onChangeIsAutoStop = (value: boolean) => {
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { isAutoStop: value } })
+  }
+
+  const onChangeSpeakingRate = (value: number) => {
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { speakingRate: value } })
+  }
 
   return (
     <div className='flex h-full w-screen flex-col'>
@@ -696,12 +709,12 @@ export const GoogleSttWhisperChat = () => {
       </div>
       <GoogleSTTPill
         autoStopTimeout={controlsState.autoStopTimeout}
-        isAutoStop={flahsState.isAutoStop}
+        isAutoStop={controlsState.isAutoStop}
         isUnttering={flahsState.isUttering}
         speakingRate={controlsState.speakingRate}
-        onChangeAutoStopTimeout={(value: number) => controlsDispatch({ type: ControlsActions.SET_AUTO_STOP_TIMEOUT, value: value })}
-        onChangeIsAutoStop={(value: boolean) => { flagsDispatch({ type: FlagsActions.TOGGLE_AUTO_STOP, value: value }); }}
-        onChangeSpeakingRate={(value: number) => controlsDispatch({ type: ControlsActions.SET_SPEANKING_RATE, value: value })}
+        onChangeAutoStopTimeout={onChangeAutoStopTimeout}
+        onChangeIsAutoStop={onChangeIsAutoStop}
+        onChangeSpeakingRate={onChangeSpeakingRate}
         onToggleUnttering={toggleUttering}
       />
       {noti ? (

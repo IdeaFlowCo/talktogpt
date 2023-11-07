@@ -5,7 +5,7 @@ import GoogleSTTInput from 'components/atoms/GoogleSTTInput';
 import GoogleSTTPill from 'components/atoms/GoogleSTTPill';
 import InterimHistory from 'components/atoms/InterimHistory';
 import type { Harker } from 'hark';
-import { useEffect, useReducer, useRef, useState } from 'react';
+import { use, useEffect, useReducer, useRef, useState } from 'react';
 import io, { type Socket } from 'socket.io-client';
 import { type VoiceCommand } from 'types/useWhisperTypes';
 import useSound from 'use-sound';
@@ -21,11 +21,14 @@ import {
 } from './methods';
 import {
   BE_CONCISE,
+  STOP_TIMEOUT,
   TALKTOGPT_SOCKET_ENDPOINT,
 } from './constants';
 import { isAndroid } from 'react-device-detect';
 import { initialFlagsState, FlagsActions, flagsReducer } from './reducers/flags';
 import { ControlsActions, controlsReducer, initialControlsState } from './reducers/controls';
+import { createSettings, updateSettings, useSettingsByUser } from 'util/db';
+import { on } from 'form-data';
 
 const TEXT_SEPARATORS = {
   PARAGRAPH_BREAK: '\n\n',
@@ -45,7 +48,7 @@ const defaultMessage: Message = {
 
 export const GoogleSttChat = () => {
   const auth = useAuth();
-
+  const userSettings = useSettingsByUser();
   const audioContextRef = useRef<AudioContext>();
   const audioInputRef = useRef<MediaStreamAudioSourceNode>();
   const autoStopRef = useRef<NodeJS.Timeout>();
@@ -73,7 +76,6 @@ export const GoogleSttChat = () => {
   }>();
 
   const [{
-    isAutoStop,
     isFinalData,
     isListening,
     isLoading,
@@ -86,7 +88,8 @@ export const GoogleSttChat = () => {
 
   const [{
     autoStopTimeout,
-    speakingRate
+    speakingRate,
+    isAutoStop,
   }, controlsDispatch] = useReducer(controlsReducer, initialControlsState);
 
 
@@ -173,6 +176,22 @@ export const GoogleSttChat = () => {
     isReadyToSpeech.current = false;
     startUttering(storedMessagesRef.current[lastSpeechIndexRef.current]);
   }
+
+  useEffect(() => {
+    if (auth.user?.id && userSettings?.data?.length <= 0) {
+      createSettings({ settings: { autoStopTimeout: STOP_TIMEOUT, speakingRate: 1, isAutoStop: true }, user_id: auth.user?.id })
+    }
+
+    if (auth.user?.id && userSettings?.data?.length > 0) {
+      controlsDispatch({
+        type: ControlsActions.UPDATE_SETTINGS, values: {
+          autoStopTimeout: userSettings.data[0].settings.autoStopTimeout,
+          speakingRate: userSettings.data[0].settings.speakingRate,
+          isAutoStop: userSettings.data[0].settings.isAutoStop,
+        }
+      })
+    }
+  }, [auth.user?.id, userSettings.data])
 
   useEffect(() => {
     if (firstMessage && storedMessagesRef.current.length === 1)
@@ -333,7 +352,8 @@ export const GoogleSttChat = () => {
     const action = getVoiceCommandAction(voiceCommand);
     switch (action?.type) {
       case 'SET_IS_AUTO_STOP':
-        flagsDispatch({ type: FlagsActions.TOGGLE_AUTO_STOP, value: action.value });
+        controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { isAutoStop: action.value } });
+        updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, isAutoStop: action.value } })
         showSuccessMessage(`${voiceCommand.successMessage} ${voiceCommand.args ?? ''}`)
         break;
 
@@ -344,19 +364,23 @@ export const GoogleSttChat = () => {
 
       case 'SET_AUTO_STOP_TIMEOUT':
         if (typeof action.value === 'number') {
-          controlsDispatch({ type: ControlsActions.SET_AUTO_STOP_TIMEOUT, value: action.value })
+          controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { autoStopTimeout: action.value } })
+          updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: action.value } })
           showSuccessMessage(`${voiceCommand.successMessage} ${voiceCommand.args ?? ''}`)
         }
         if (typeof action.value === 'string') {
           if (action.value === 'faster') {
+            const autoStopTimeoutValue = autoStopTimeout - 1 <= 0 ? 1 : autoStopTimeout - 1
             controlsDispatch({
-              type: ControlsActions.SET_AUTO_STOP_TIMEOUT,
-              value: autoStopTimeout - 1 <= 0 ? 1 : autoStopTimeout - 1
+              type: ControlsActions.UPDATE_SETTINGS,
+              values: { autoStopTimeout: autoStopTimeoutValue }
             })
+            updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeoutValue } })
             showSuccessMessage(`${voiceCommand.successMessage} ${voiceCommand.args ?? ''}`)
           }
           if (action.value === 'slower') {
-            controlsDispatch({ type: ControlsActions.SET_AUTO_STOP_TIMEOUT, value: autoStopTimeout + 1 })
+            controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { autoStopTimeout: autoStopTimeout + 1 } })
+            updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeout + 1 } })
           }
           showSuccessMessage(`${voiceCommand.successMessage} ${voiceCommand.args ?? ''}`)
         }
@@ -633,6 +657,21 @@ export const GoogleSttChat = () => {
     }
   }, [messages]);
 
+  const onChangeAutoStopTimeout = (value: number) => {
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { autoStopTimeout: value } })
+    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: value } })
+  }
+
+  const onChangeIsAutoStop = (value: boolean) => {
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { isAutoStop: value } })
+    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, isAutoStop: value } })
+  }
+
+  const onChangeSpeakingRate = (value: number) => {
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { speakingRate: value } })
+    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, speakingRate: value } })
+  }
+
   return (
     <div className='flex h-full w-screen flex-col'>
       <div
@@ -659,9 +698,9 @@ export const GoogleSttChat = () => {
         isAutoStop={isAutoStop}
         isUnttering={isUttering}
         speakingRate={speakingRate}
-        onChangeAutoStopTimeout={(value: number) => controlsDispatch({ type: ControlsActions.SET_AUTO_STOP_TIMEOUT, value: value })}
-        onChangeIsAutoStop={(value: boolean) => { flagsDispatch({ type: FlagsActions.TOGGLE_AUTO_STOP, value: value }); }}
-        onChangeSpeakingRate={(value: number) => controlsDispatch({ type: ControlsActions.SET_SPEANKING_RATE, value: value })}
+        onChangeAutoStopTimeout={onChangeAutoStopTimeout}
+        onChangeIsAutoStop={onChangeIsAutoStop}
+        onChangeSpeakingRate={onChangeSpeakingRate}
         onToggleUnttering={toggleUttering}
       />
       {noti ? (

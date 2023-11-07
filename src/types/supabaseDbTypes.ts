@@ -32,3 +32,16 @@ export interface FollowupMessageType {
   id?: number;
   created_at?: string;
 }
+
+export interface UserSettingsType {
+  id: number;
+  created_at?: string;
+  user_id: number;
+  settings: string;
+}
+
+export interface SettingsType {
+  autoStopTimeout: number;
+  speakingRate: number;
+  isAutoStopEnabled: boolean;
+}

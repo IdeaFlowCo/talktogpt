@@ -85,3 +85,22 @@ create policy "Can read items they own" on public.items for select using ( auth.
 create policy "Can insert items they own" on public.items for insert with check ( auth.uid() = "owner" );
 create policy "Can update items they own" on public.items for update using ( auth.uid() = "owner" );
 create policy "Can delete items they own" on public.items for delete using ( auth.uid() = "owner" );
+
+
+/*** SETTINGS ***/
+
+create table
+  public.settings (
+    "id" uuid not null default gen_random_uuid (),
+    "created_at" timestamp with time zone not null default now(),
+    "user_id" uuid not null,
+    "settings" json null,
+    constraint settings_pkey primary key (id),
+    constraint settings_user_id_fkey foreign key (user_id) references users (id) on delete cascade
+  );
+
+-- Create security policies
+alter table public.settings enable row level security;
+CREATE POLICY "Can insert their own settings only authenticated users" ON public.settings FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Can read settings they own" ON public.settings FOR SELECT USING ((auth.uid() = user_id));
+CREATE POLICY "Can upadte their own settings" ON public.settings FOR UPDATE USING ((auth.uid() = user_id));
