@@ -715,7 +715,7 @@ export const GoogleSttWhisperChat = () => {
         onChangeAutoStopTimeout={onChangeAutoStopTimeout}
         onChangeIsAutoStop={onChangeIsAutoStop}
         onChangeSpeakingRate={onChangeSpeakingRate}
-        onToggleUnttering={toggleUttering}
+        onToggleUttering={toggleUttering}
       />
       {noti ? (
         <Alert

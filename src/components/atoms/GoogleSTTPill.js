@@ -9,7 +9,7 @@ export default function GoogleSTTPill({
   onChangeAutoStopTimeout,
   onChangeIsAutoStop,
   onChangeSpeakingRate,
-  onToggleUnttering,
+  onToggleUttering,
 }) {
   return (
     <div className='flex h-10 min-w-[50%] flex-row items-center justify-center gap-4 self-center rounded-full bg-gray-300 sm:min-w-[25%]'>
@@ -17,7 +17,7 @@ export default function GoogleSTTPill({
         speakingRate={speakingRate}
         onChangeSpeakingRate={onChangeSpeakingRate}
       />
-      <button onClick={onToggleUnttering}>
+      <button onClick={onToggleUttering}>
         {isUnttering ? (
           <StopIcon className='h-6 w-6' />
         ) : (
