@@ -1,11 +1,10 @@
 import { useChat, type CreateMessage, type Message } from 'ai/react';
 import Alert from 'components/atoms/Alert';
-import ChatMessage from 'components/atoms/ChatMessage';
 import GoogleSTTInput from 'components/atoms/GoogleSTTInput';
 import GoogleSTTPill from 'components/atoms/GoogleSTTPill';
 import InterimHistory from 'components/atoms/InterimHistory';
 import type { Harker } from 'hark';
-import { use, useEffect, useReducer, useRef, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import io, { type Socket } from 'socket.io-client';
 import { type VoiceCommand } from 'types/useWhisperTypes';
 import useSound from 'use-sound';
@@ -28,7 +27,7 @@ import { isAndroid } from 'react-device-detect';
 import { initialFlagsState, FlagsActions, flagsReducer } from './reducers/flags';
 import { ControlsActions, controlsReducer, initialControlsState } from './reducers/controls';
 import { createSettings, updateSettings, useSettingsByUser } from 'util/db';
-import { on } from 'form-data';
+import ChatMessage from 'components/atoms/ChatMessage';
 
 const TEXT_SEPARATORS = {
   PARAGRAPH_BREAK: '\n\n',
@@ -714,6 +713,12 @@ export const GoogleSttChat = () => {
               sender={message.role}
             />
           ))}
+          {(interim && !isLoading && isRecording) ? (
+            <ChatMessage
+              message={interim}
+              sender='user'
+              loading={true}
+            />) : null}
         </div>
       </div>
       <GoogleSTTPill
