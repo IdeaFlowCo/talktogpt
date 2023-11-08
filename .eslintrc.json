@@ -1,3 +1,7 @@
 {
-  "extends": ["next/core-web-vitals", "next", "prettier"]
+  "extends": ["next/core-web-vitals", "next", "prettier"],
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "react/prop-types": "off"
+  }
 }

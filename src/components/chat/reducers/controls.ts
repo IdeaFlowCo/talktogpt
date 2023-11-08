@@ -5,6 +5,10 @@ interface GoogleSttControlsState {
   autoStopTimeout?: number;
   isAutoStop?: boolean;
   isWhisperEnabled?: boolean;
+  wakeKeywords?: string;
+  pauseWords?: string;
+  terminatorKeywords?: string;
+  terminatorWaitTime?: number;
 }
 
 export enum ControlsActions {
@@ -21,6 +25,11 @@ export const initialControlsState: GoogleSttControlsState = {
   autoStopTimeout: STOP_TIMEOUT,
   isAutoStop: true,
   isWhisperEnabled: true,
+  wakeKeywords: 'over',
+  pauseWords: 'pause',
+  terminatorKeywords: 'over',
+  terminatorWaitTime: 1,
+
 };
 
 export function controlsReducer(state: GoogleSttControlsState, action: GoogleSttControlsAction) {

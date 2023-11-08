@@ -93,7 +93,8 @@ export const GoogleSttChat = () => {
     autoStopTimeout,
     speakingRate,
     isAutoStop,
-    isWhisperEnabled
+    isWhisperEnabled,
+    terminatorWaitTime
   }, controlsDispatch] = useReducer(controlsReducer, initialControlsState);
 
   const { recording, transcript, startRecording, stopRecording } = useWhisper({
@@ -203,7 +204,15 @@ export const GoogleSttChat = () => {
 
   useEffect(() => {
     if (auth.user?.id && userSettings?.data?.length <= 0) {
-      createSettings({ settings: { autoStopTimeout: STOP_TIMEOUT, speakingRate: 1, isAutoStop: true, isWhisperEnabled: true }, user_id: auth.user?.id })
+      createSettings({
+        settings: {
+          autoStopTimeout: STOP_TIMEOUT,
+          speakingRate: 1,
+          isAutoStop: true,
+          isWhisperEnabled: true,
+          terminatorWaitTime: 1
+        }, user_id: auth.user?.id
+      })
     }
 
     if (auth.user?.id && userSettings?.data?.length > 0) {
@@ -212,7 +221,8 @@ export const GoogleSttChat = () => {
           autoStopTimeout: userSettings.data[0].settings.autoStopTimeout,
           speakingRate: userSettings.data[0].settings.speakingRate,
           isAutoStop: userSettings.data[0].settings.isAutoStop,
-          isWhisperEnabled: userSettings.data[0].settings.isWhisperEnabled
+          isWhisperEnabled: userSettings.data[0].settings.isWhisperEnabled,
+          terminatorWaitTime: userSettings.data[0].settings.terminatorWaitTime
         }
       })
     }
@@ -792,6 +802,11 @@ export const GoogleSttChat = () => {
     }
   }
 
+  const onChangeTerminatorWaitTime = (value: number) => {
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { terminatorWaitTime: value } })
+    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, terminatorWaitTime: value } })
+  }
+
   return (
     <div className='flex h-full w-screen flex-col'>
       <div
@@ -822,14 +837,16 @@ export const GoogleSttChat = () => {
       <GoogleSTTPill
         autoStopTimeout={autoStopTimeout}
         isAutoStop={isAutoStop}
-        isUnttering={isUttering}
+        isUttering={isUttering}
         speakingRate={speakingRate}
         isWhisperEnabled={isWhisperEnabled}
+        terminatorWaitTime={terminatorWaitTime}
         onChangeAutoStopTimeout={onChangeAutoStopTimeout}
         onChangeIsAutoStop={onChangeIsAutoStop}
         onChangeSpeakingRate={onChangeSpeakingRate}
         onToggleUttering={toggleUttering}
         onChangeIsWhisperEnabled={onChangeIsWhisperEnabled}
+        onChangeTerminatorWaitTime={onChangeTerminatorWaitTime}
       />
       {noti ? (
         <Alert
