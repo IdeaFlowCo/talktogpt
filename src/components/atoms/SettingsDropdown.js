@@ -2,25 +2,14 @@ import { Switch, Popover, Transition } from '@headlessui/react';
 import { Fragment, useState } from 'react';
 import { usePopper } from 'react-popper';
 
-interface SettingsDropdownProps {
-  autoStopTimeout: number;
-  isAutoStop: boolean;
-  isWhisperEnabled: boolean;
-  onChangeAutoStopTimeout: (timeout: number) => void;
-  onChangeIsAutoStop: (isAutoStop: boolean) => void;
-  onChangePorcupineAccessKey?: () => void;
-  onChangeIsWhisperEnabled: (isWhisperEnabled: boolean) => void;
-}
-
 export default function SettingsDropdown({
   autoStopTimeout,
   isAutoStop,
   isWhisperEnabled,
   onChangeAutoStopTimeout,
   onChangeIsAutoStop,
-  onChangePorcupineAccessKey,
   onChangeIsWhisperEnabled
-}: Readonly<SettingsDropdownProps>) {
+}) {
   let [referenceElement, setReferenceElement] = useState();
   let [popperElement, setPopperElement] = useState();
   let { styles, attributes } = usePopper(referenceElement, popperElement);
@@ -53,7 +42,7 @@ export default function SettingsDropdown({
           {...attributes.popper}
         >
           <div className='overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5'>
-            {onChangePorcupineAccessKey ? (
+            {/* {onChangePorcupineAccessKey ? (
               <div className='border-b border-gray-200 p-2'>
                 <button
                   onClick={onChangePorcupineAccessKey}
@@ -62,7 +51,7 @@ export default function SettingsDropdown({
                   Change Porcupine Access Key
                 </button>
               </div>
-            ) : null}
+            ) : null} */}
             <div className='flex flex-col p-4'>
               <div className='mb-2 flex flex-row items-center'>
                 <Switch
