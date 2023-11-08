@@ -73,7 +73,7 @@ export const GoogleSttWhisperChat = () => {
     message: string;
   }>();
 
-  const [flahsState, flagsDispatch] = useReducer(flagsReducer, initialFlagsState);
+  const [flagsState, flagsDispatch] = useReducer(flagsReducer, initialFlagsState);
   const [controlsState, controlsDispatch] = useReducer(controlsReducer, initialControlsState);
 
   const [playSonar] = useSound('/sounds/sonar.mp3', { volume: 0.3, interrupt: true, });
@@ -190,7 +190,7 @@ export const GoogleSttWhisperChat = () => {
   };
 
   const processStartKeyword = async () => {
-    if (flahsState.isUttering) {
+    if (flagsState.isUttering) {
       return
     }
     startRecording().then(() => {
@@ -218,7 +218,7 @@ export const GoogleSttWhisperChat = () => {
       if (
         typeof startKeywordDetectedRef.current !== 'undefined' &&
         !startKeywordDetectedRef.current &&
-        !flahsState.isUttering
+        !flagsState.isUttering
       ) {
         const keyword = extractStartKeyword(interimRef.current);
         if (keyword !== null) {
@@ -298,7 +298,7 @@ export const GoogleSttWhisperChat = () => {
   };
 
   const prepareUseWhisper = async () => {
-    if (!flahsState.isWhisperPrepared) {
+    if (!flagsState.isWhisperPrepared) {
       /**
        * fake start and stop useWhisper so that recorder is prepared
        * once start keyword detected, useWhisper can start record instantly
@@ -310,7 +310,7 @@ export const GoogleSttWhisperChat = () => {
   };
 
   const disableUseWhisper = async () => {
-    if (flahsState.isWhisperPrepared) {
+    if (flagsState.isWhisperPrepared) {
       await stopRecording();
       flagsDispatch({ type: FlagsActions.DISABLE_WHISPER });
     }
@@ -538,7 +538,7 @@ export const GoogleSttWhisperChat = () => {
   };
 
   const toggleUttering = () => {
-    if (flahsState.isUttering) {
+    if (flagsState.isUttering) {
       stopUttering();
     } else {
       const lastMessage = messages
@@ -626,29 +626,29 @@ export const GoogleSttWhisperChat = () => {
    */
   useEffect(() => {
     if (
-      !flahsState.isSending &&
+      !flagsState.isSending &&
       !recording &&
-      flahsState.isWhisperPrepared &&
+      flagsState.isWhisperPrepared &&
       transcript.blob?.size > 44
     ) {
       onTranscribe().then(() => {
         console.log("Transcription done")
       });
     }
-  }, [recording, flahsState.isSending, flahsState.isWhisperPrepared, transcript.blob?.size]);
+  }, [recording, flagsState.isSending, flagsState.isWhisperPrepared, transcript.blob?.size]);
 
   useEffect(() => {
     if (
       controlsState.isAutoStop &&
       recording &&
-      flahsState.isFinalData &&
+      flagsState.isFinalData &&
       startKeywordDetectedRef.current
     ) {
       startAutoStopTimeout();
     }
     if (
       (controlsState.isAutoStop && !recording) ||
-      !flahsState.isFinalData ||
+      !flagsState.isFinalData ||
       !startKeywordDetectedRef.current
     ) {
       stopAutoStopTimeout();
@@ -656,7 +656,7 @@ export const GoogleSttWhisperChat = () => {
   }, [
     controlsState.isAutoStop,
     recording,
-    flahsState.isFinalData,
+    flagsState.isFinalData,
     startKeywordDetectedRef.current,
   ]);
 
@@ -710,7 +710,7 @@ export const GoogleSttWhisperChat = () => {
       <GoogleSTTPill
         autoStopTimeout={controlsState.autoStopTimeout}
         isAutoStop={controlsState.isAutoStop}
-        isUnttering={flahsState.isUttering}
+        isUnttering={flagsState.isUttering}
         speakingRate={controlsState.speakingRate}
         onChangeAutoStopTimeout={onChangeAutoStopTimeout}
         onChangeIsAutoStop={onChangeIsAutoStop}
@@ -728,11 +728,11 @@ export const GoogleSttWhisperChat = () => {
         <InterimHistory interims={interimsRef.current} interim={interim} />
       ) : null}
       <GoogleSTTInput
-        isListening={flahsState.isListening}
-        isLoading={flahsState.isLoading}
-        isSpeaking={flahsState.isSpeaking}
+        isListening={flagsState.isListening}
+        isLoading={flagsState.isLoading}
+        isSpeaking={flagsState.isSpeaking}
         isRecording={recording && startKeywordDetectedRef.current}
-        isWhisperPrepared={flahsState.isWhisperPrepared}
+        isWhisperPrepared={flagsState.isWhisperPrepared}
         query={input}
         onChangeQuery={handleInputChange}
         onForceStopRecording={forceStopRecording}

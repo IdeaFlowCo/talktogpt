@@ -4,6 +4,7 @@ interface GoogleSttControlsState {
   speakingRate?: number;
   autoStopTimeout?: number;
   isAutoStop?: boolean;
+  isWhisperEnabled?: boolean;
 }
 
 export enum ControlsActions {
@@ -19,6 +20,7 @@ export const initialControlsState: GoogleSttControlsState = {
   speakingRate: 1,
   autoStopTimeout: STOP_TIMEOUT,
   isAutoStop: true,
+  isWhisperEnabled: true,
 };
 
 export function controlsReducer(state: GoogleSttControlsState, action: GoogleSttControlsAction) {

@@ -2,13 +2,25 @@ import { Switch, Popover, Transition } from '@headlessui/react';
 import { Fragment, useState } from 'react';
 import { usePopper } from 'react-popper';
 
+interface SettingsDropdownProps {
+  autoStopTimeout: number;
+  isAutoStop: boolean;
+  isWhisperEnabled: boolean;
+  onChangeAutoStopTimeout: (timeout: number) => void;
+  onChangeIsAutoStop: (isAutoStop: boolean) => void;
+  onChangePorcupineAccessKey?: () => void;
+  onChangeIsWhisperEnabled: (isWhisperEnabled: boolean) => void;
+}
+
 export default function SettingsDropdown({
   autoStopTimeout,
   isAutoStop,
+  isWhisperEnabled,
   onChangeAutoStopTimeout,
   onChangeIsAutoStop,
   onChangePorcupineAccessKey,
-}) {
+  onChangeIsWhisperEnabled
+}: Readonly<SettingsDropdownProps>) {
   let [referenceElement, setReferenceElement] = useState();
   let [popperElement, setPopperElement] = useState();
   let { styles, attributes } = usePopper(referenceElement, popperElement);
@@ -56,15 +68,13 @@ export default function SettingsDropdown({
                 <Switch
                   checked={isAutoStop}
                   onChange={onChangeIsAutoStop}
-                  className={`${
-                    isAutoStop ? 'bg-[#96BE64]' : 'bg-gray-400'
-                  } relative inline-flex h-6 w-11 items-center rounded-full`}
+                  className={`${isAutoStop ? 'bg-[#96BE64]' : 'bg-gray-400'
+                    } relative inline-flex h-6 w-11 items-center rounded-full`}
                 >
                   <span className='sr-only'>Auto Respond</span>
                   <span
-                    className={`${
-                      isAutoStop ? 'translate-x-6' : 'translate-x-1'
-                    } inline-block h-4 w-4 transform rounded-full bg-white transition`}
+                    className={`${isAutoStop ? 'translate-x-6' : 'translate-x-1'
+                      } inline-block h-4 w-4 transform rounded-full bg-white transition`}
                   />
                 </Switch>
                 <div className='flex flex-row items-center'>
@@ -73,6 +83,28 @@ export default function SettingsDropdown({
                     onClick={() => onChangeIsAutoStop?.(!isAutoStop)}
                   >
                     Automatic respond
+                  </button>
+                </div>
+              </div>
+              <div className='mb-2 flex flex-row items-center'>
+                <Switch
+                  checked={isWhisperEnabled}
+                  onChange={onChangeIsWhisperEnabled}
+                  className={`${isWhisperEnabled ? 'bg-[#96BE64]' : 'bg-gray-400'
+                    } relative inline-flex h-6 w-11 items-center rounded-full`}
+                >
+                  <span className='sr-only'>Enable Whisper</span>
+                  <span
+                    className={`${isWhisperEnabled ? 'translate-x-6' : 'translate-x-1'
+                      } inline-block h-4 w-4 transform rounded-full bg-white transition`}
+                  />
+                </Switch>
+                <div className='flex flex-row items-center'>
+                  <button
+                    className={`group flex flex-row items-center px-2 py-2 text-sm text-gray-900`}
+                    onClick={() => onChangeIsWhisperEnabled?.(!isWhisperEnabled)}
+                  >
+                    Enable Whisper
                   </button>
                 </div>
               </div>

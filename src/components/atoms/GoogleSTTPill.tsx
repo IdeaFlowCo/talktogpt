@@ -10,6 +10,8 @@ export default function GoogleSTTPill({
   onChangeIsAutoStop,
   onChangeSpeakingRate,
   onToggleUttering,
+  isWhisperEnabled,
+  onChangeIsWhisperEnabled
 }) {
   return (
     <div className='flex h-10 min-w-[50%] flex-row items-center justify-center gap-4 self-center rounded-full bg-gray-300 sm:min-w-[25%]'>
@@ -27,8 +29,10 @@ export default function GoogleSTTPill({
       <SettingsDropdown
         autoStopTimeout={autoStopTimeout}
         isAutoStop={isAutoStop}
+        isWhisperEnabled={isWhisperEnabled}
         onChangeAutoStopTimeout={onChangeAutoStopTimeout}
         onChangeIsAutoStop={onChangeIsAutoStop}
+        onChangeIsWhisperEnabled={onChangeIsWhisperEnabled}
       />
     </div>
   );
