@@ -1,7 +1,7 @@
 import React from 'react';
 import AppearAnimation from './BasicAppearAnimation';
 import { BE_CONCISE } from 'components/chat/constants';
-import { SpeechBubble } from 'assets/icons/SpeechBubble';
+import { ChatBubbleOvalLeftEllipsisIcon } from '@heroicons/react/20/solid';
 
 interface ChatMessageProps {
   message: string;
@@ -26,9 +26,10 @@ function ChatMessage({ message, sender, loading }: Readonly<ChatMessageProps>) {
         } 
         ${loading ? 'animate-pulse' : ''}`}
     >
-      <p className='flex text-md max-w-md gap-2'>{loading ? <SpeechBubble /> : ''} {filteredMessage} {loading ? '...' : ''}</p>
+      <p className='flex text-md max-w-md gap-2'>{loading ? <ChatBubbleOvalLeftEllipsisIcon className='h-6 w-6' /> : ''} {filteredMessage} {loading ? '...' : ''}</p>
     </AppearAnimation>
   );
 }
+
 
 export default ChatMessage;

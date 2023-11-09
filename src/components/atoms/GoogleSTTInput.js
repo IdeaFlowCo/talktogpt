@@ -17,6 +17,13 @@ export default function GoogleSTTInput({
 }) {
   const waveRef = useRef();
   const [playBubble] = useSound('/sounds/bubble.mp3', { volume: 1, interrupt: true });
+  const [playSonar] = useSound('/sounds/sonar.mp3', { volume: 0.3, interrupt: true });
+
+  useEffect(() => {
+    if (!isRecording && isWhisperPrepared && !isSpeaking && isListening && isLoading) {
+      playSonar();
+    }
+  }, [isListening, isLoading, isRecording, isSpeaking, isWhisperPrepared, playSonar])
 
   useEffect(() => {
     const initWaveform = async () => {

@@ -89,25 +89,26 @@ export const trimText = (text: string): string => {
   return `${textStripCommas.charAt(0).toLocaleUpperCase()}${textStripCommas.substring(1)}`;
 };
 
-export const handleKeywords = (text: string): string => {
-  // const lowerCaseText = text.toLowerCase();
-  // const wake_words = process.env.NEXT_PUBLIC_WAKEWORDS?.split(',') || WAKE_WORDS;
-  // wake_words.forEach((keyword) => {
-  //   const last_keyword_chunk = keyword.split(' ').reverse()[0];
-  //   const keywordIndex = lowerCaseText.indexOf(sanitizeText(last_keyword_chunk));
+export const removeInitialKeyword = (text: string): string => {
+  const lowerCaseText = text.toLowerCase();
+  const wake_words = process.env.NEXT_PUBLIC_WAKEWORDS?.split(',') || WAKE_WORDS;
+  wake_words.forEach((keyword) => {
+    const last_keyword_chunk = keyword.split(' ').reverse()[0];
+    const keywordIndex = lowerCaseText.indexOf(sanitizeText(last_keyword_chunk));
 
-  //   if (keywordIndex !== -1) {
-  //     text = text.substring(keywordIndex + last_keyword_chunk.length);
-  //   }
-  // });
+    if (keywordIndex !== -1) {
+      text = text.substring(keywordIndex + last_keyword_chunk.length);
+    }
+  });
+  return text;
+}
 
+export const removeTerminatorKeyword = (text: string): string => {
   const end_words = process.env.NEXT_PUBLIC_ENDWORDS?.split(',') || END_WORDS;
   end_words.forEach((keyword) => {
-    const first_keyword_chunk = keyword.split(' ')[0];
-    const endKeywordIndex = text.lastIndexOf(sanitizeText(first_keyword_chunk));
-    if (endKeywordIndex !== -1) {
-      const keywordChunk = text.substring(endKeywordIndex).substring(first_keyword_chunk.length).trim();
-      text = text.substring(0, endKeywordIndex).trim().concat(' ', keywordChunk);
+    const lastChunk = text.split(' ').reverse()[0].toLocaleLowerCase();
+    if (lastChunk.includes(keyword.toLocaleLowerCase())) {
+      text = text.toLocaleLowerCase().split(' ').slice(0, -1).join(' ');
     }
   });
 

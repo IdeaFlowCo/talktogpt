@@ -4,14 +4,16 @@ import SpeakingRateDropdown from './SpeakingRateDropdown';
 export default function GoogleSTTPill({
   autoStopTimeout,
   isAutoStop,
-  isUnttering,
+  isUttering,
   speakingRate = 1,
+  terminatorWaitTime = 1,
   onChangeAutoStopTimeout,
   onChangeIsAutoStop,
   onChangeSpeakingRate,
   onToggleUttering,
   isWhisperEnabled,
-  onChangeIsWhisperEnabled
+  onChangeIsWhisperEnabled,
+  onChangeTerminatorWaitTime
 }) {
   return (
     <div className='flex h-10 min-w-[50%] flex-row items-center justify-center gap-4 self-center rounded-full bg-gray-300 sm:min-w-[25%]'>
@@ -20,7 +22,7 @@ export default function GoogleSTTPill({
         onChangeSpeakingRate={onChangeSpeakingRate}
       />
       <button onClick={onToggleUttering}>
-        {isUnttering ? (
+        {isUttering ? (
           <StopIcon className='h-6 w-6' />
         ) : (
           <PlayIcon className='h-6 w-6' />
@@ -30,9 +32,11 @@ export default function GoogleSTTPill({
         autoStopTimeout={autoStopTimeout}
         isAutoStop={isAutoStop}
         isWhisperEnabled={isWhisperEnabled}
+        terminatorWaitTime={terminatorWaitTime}
         onChangeAutoStopTimeout={onChangeAutoStopTimeout}
         onChangeIsAutoStop={onChangeIsAutoStop}
         onChangeIsWhisperEnabled={onChangeIsWhisperEnabled}
+        onChangeTerminatorWaitTime={onChangeTerminatorWaitTime}
       />
     </div>
   );
