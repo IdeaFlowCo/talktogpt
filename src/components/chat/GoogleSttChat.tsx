@@ -22,6 +22,7 @@ import {
 } from './methods';
 import {
   BE_CONCISE,
+  END_WORDS,
   STOP_TIMEOUT,
   TALKTOGPT_SOCKET_ENDPOINT,
 } from './constants';
@@ -105,7 +106,7 @@ export const GoogleSttChat = () => {
     },
   });
 
-  const [playSonar] = useSound('/sounds/sonar.mp3', { volume: 0.3, interrupt: true, });
+  // const [playSonar] = useSound('/sounds/sonar.mp3', { volume: 0.3 });
 
   const prepareUseWhisper = async () => {
     if (!isWhisperPrepared) {
@@ -235,22 +236,13 @@ export const GoogleSttChat = () => {
 
   const forceStopRecording = async () => {
     if (isWhisperEnabled) {
-      stopRecording().then(() => {
-        startKeywordDetectedRef.current = false;
-        endKeywordDetectedRef.current = false;
-        stopUttering();
-        playSonar();
-        flagsDispatch({ type: FlagsActions.FORCE_STOP_RECORDING });
-        setOpenaiRequest(sanitizeText(interim))
-      })
-    } else {
-      startKeywordDetectedRef.current = false;
-      endKeywordDetectedRef.current = false;
-      stopUttering();
-      playSonar();
-      flagsDispatch({ type: FlagsActions.FORCE_STOP_RECORDING });
-      setOpenaiRequest(sanitizeText(interim))
+      await stopRecording();
     }
+    setOpenaiRequest(sanitizeText(interim))
+    startKeywordDetectedRef.current = false;
+    endKeywordDetectedRef.current = false;
+    flagsDispatch({ type: FlagsActions.FORCE_STOP_RECORDING });
+    stopUttering();
   };
 
   const onAutoStop = async () => {
@@ -263,21 +255,37 @@ export const GoogleSttChat = () => {
     if (isUttering) {
       return
     }
-
     if (isWhisperEnabled) {
       startRecording().then(() => {
-        setOpenaiRequest('');
-        flagsDispatch({ type: FlagsActions.WAKEWORD_RECOGNISED });
-        stopUttering();
-        startKeywordDetectedRef.current = true;
+        console.log("Whisper start recording")
       })
-    } else {
-      setOpenaiRequest('');
-      flagsDispatch({ type: FlagsActions.WAKEWORD_RECOGNISED });
-      stopUttering();
-      startKeywordDetectedRef.current = true;
     }
+    setOpenaiRequest('');
+    flagsDispatch({ type: FlagsActions.WAKEWORD_RECOGNISED });
+    stopUttering();
+    startKeywordDetectedRef.current = true;
+
   };
+
+  const isStillSpeakingAfterTerminator = () => {
+    const endWords = process.env.NEXT_PUBLIC_ENDWORDS?.split(',') || END_WORDS;
+    const matchWord = endWords.find((word) => {
+      const splitWords = interimRef.current.split(' ')
+      return splitWords[splitWords.length - 1].toLowerCase() === word.toLowerCase()
+    });
+    return typeof matchWord !== 'undefined';
+  }
+
+  const stopByDetectEndKeyword = () => {
+    endKeywordDetectedRef.current = true;
+    if (typeof startKeywordDetectedRef.current !== 'undefined' &&
+      !startKeywordDetectedRef.current) {
+      stopUttering();
+    } else {
+      setOpenaiRequest(interim)
+      onAutoStop();
+    }
+  }
 
   const onSpeechRecognized = async (data: WordRecognized) => {
     try {
@@ -315,9 +323,32 @@ export const GoogleSttChat = () => {
           !startKeywordDetectedRef.current) {
           stopUttering();
         } else {
-          setOpenaiRequest(interim)
+          if (interim.length > 0) {
+            setOpenaiRequest(interim)
+          }
           onAutoStop();
         }
+        // const terminatorTimeout = setTimeout(() => {
+        //   const isStillSpeaking = isStillSpeakingAfterTerminator();
+        //   console.log({ isStillSpeaking })
+        //   if (!isStillSpeaking) {
+        //     endKeywordDetectedRef.current = true;
+        //     if (typeof startKeywordDetectedRef.current !== 'undefined' &&
+        //       !startKeywordDetectedRef.current) {
+        //       console.log("1")
+        //       stopUttering();
+        //     } else {
+        //       console.log("2")
+        //       if (interim.length > 0) {
+        //         console.log({ interim })
+        //         setOpenaiRequest(interim)
+        //       }
+        //       onAutoStop();
+        //     }
+        //   } else {
+        //     clearTimeout(terminatorTimeout);
+        //   }
+        // }, terminatorWaitTime * 1000);
       }
 
       if ((typeof startKeywordDetectedRef.current == 'undefined' || !startKeywordDetectedRef.current) &&
@@ -327,8 +358,6 @@ export const GoogleSttChat = () => {
 
         if (typeof voiceCommand !== "undefined" && voiceCommand) {
           runVoiceCommand(voiceCommand);
-          // showSuccessMessage(`${voiceCommand.successMessage} ${voiceCommand.args ?? ''}`)
-          // interimsRef.current.pop();
           return;
         }
       }
@@ -445,7 +474,7 @@ export const GoogleSttChat = () => {
     const action = getVoiceCommandAction(voiceCommand);
     switch (action?.type) {
       case 'SET_IS_AUTO_STOP':
-        controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { isAutoStop: action.value } });
+        controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, isAutoStop: action.value } });
         updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, isAutoStop: action.value } })
         showSuccessMessage(`${voiceCommand.successMessage} ${voiceCommand.args ?? ''}`)
         break;
@@ -457,7 +486,7 @@ export const GoogleSttChat = () => {
 
       case 'SET_AUTO_STOP_TIMEOUT':
         if (typeof action.value === 'number') {
-          controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { autoStopTimeout: action.value } })
+          controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, autoStopTimeout: action.value } })
           updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: action.value } })
           showSuccessMessage(`${voiceCommand.successMessage} ${voiceCommand.args ?? ''}`)
         }
@@ -466,13 +495,13 @@ export const GoogleSttChat = () => {
             const autoStopTimeoutValue = autoStopTimeout - 1 <= 0 ? 1 : autoStopTimeout - 1
             controlsDispatch({
               type: ControlsActions.UPDATE_SETTINGS,
-              values: { autoStopTimeout: autoStopTimeoutValue }
+              values: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeoutValue }
             })
             updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeoutValue } })
             showSuccessMessage(`${voiceCommand.successMessage} ${voiceCommand.args ?? ''}`)
           }
           if (action.value === 'slower') {
-            controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { autoStopTimeout: autoStopTimeout + 1 } })
+            controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeout + 1 } })
             updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeout + 1 } })
           }
           showSuccessMessage(`${voiceCommand.successMessage} ${voiceCommand.args ?? ''}`)
@@ -700,7 +729,6 @@ export const GoogleSttChat = () => {
         flagsDispatch({ type: FlagsActions.START_UTTERING });
       }
     }
-
     if (isWhisperEnabled) {
       prepareUseWhisper().then(() => {
         startListening().then(() => {
@@ -772,25 +800,25 @@ export const GoogleSttChat = () => {
       // auto scroll when there is new message
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, interim]);
 
   const onChangeAutoStopTimeout = (value: number) => {
-    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { autoStopTimeout: value } })
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, autoStopTimeout: value } })
     updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: value } })
   }
 
   const onChangeIsAutoStop = (value: boolean) => {
-    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { isAutoStop: value } })
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, isAutoStop: value } })
     updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, isAutoStop: value } })
   }
 
   const onChangeIsWhisperEnabled = (value: boolean) => {
-    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { isWhisperEnabled: value } })
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, isWhisperEnabled: value } })
     updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, isWhisperEnabled: value } })
   }
 
   const onChangeSpeakingRate = (value: number) => {
-    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { speakingRate: value } })
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, speakingRate: value } })
     updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, speakingRate: value } })
     if (isAndroid && globalThis.ReactNativeWebView) {
       globalThis.ReactNativeWebView.postMessage(
@@ -803,7 +831,7 @@ export const GoogleSttChat = () => {
   }
 
   const onChangeTerminatorWaitTime = (value: number) => {
-    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { terminatorWaitTime: value } })
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, terminatorWaitTime: value } })
     updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, terminatorWaitTime: value } })
   }
 
