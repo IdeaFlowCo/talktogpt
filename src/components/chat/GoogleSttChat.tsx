@@ -120,11 +120,11 @@ export const GoogleSttChat = () => {
   };
 
   // Uttering functions
-  const onStartUttering = async () => {
+  const onStartUttering = () => {
     flagsDispatch({ type: FlagsActions.START_UTTERING });
   };
 
-  const onStopUttering = async () => {
+  const onStopUttering = () => {
     lastSpeechIndexRef.current += 1;
     if (storedMessagesRef.current.length > lastSpeechIndexRef.current) {
       startUttering(storedMessagesRef.current[lastSpeechIndexRef.current]);
@@ -133,7 +133,7 @@ export const GoogleSttChat = () => {
     }
   };
 
-  const startUttering = (text: string) => {
+  const startUttering = useCallback((text: string) => {
     if (!text) {
       return;
     }
@@ -155,7 +155,7 @@ export const GoogleSttChat = () => {
         })
       );
     }
-  };
+  }, []);
 
   const { messages, append, input, setInput, handleInputChange } = useChat({
     api: '/api/openai/stream',
@@ -218,10 +218,14 @@ export const GoogleSttChat = () => {
     stopUttering();
   };
 
-  const onAutoStop = async () => {
+  const onAutoStop = () => {
     endKeywordDetectedRef.current = undefined;
     stopAutoStopTimeout();
-    await forceStopRecording();
+    forceStopRecording().then(() => {
+      console.log("TalkToGPT stop recording")
+    }).catch((error) => {
+      console.error(error)
+    });
   };
 
   const processStartKeyword = () => {
@@ -268,7 +272,61 @@ export const GoogleSttChat = () => {
     stopUttering();
   }
 
+  const detectStartingKeyword = (text: string, wakeKeywords: string) => {
+    if (
+      typeof startKeywordDetectedRef.current !== 'undefined' &&
+      !startKeywordDetectedRef.current &&
+      !isUttering
+    ) {
+      const keyword = extractStartKeyword(text, wakeKeywords);
+      if (keyword !== null) {
+        processStartKeyword();
+      }
+    }
+  }
 
+  const sendRequestIfTerminatorKeywordDetected = (speech: string, speechHistory: string[], terminatorKeywords: string) => {
+    if (
+      detectEndKeyword(speech, terminatorKeywords) &&
+      !endKeywordDetectedRef.current
+    ) {
+      const timeoutId = setTimeout(() => {
+        const lastWord = speechHistory[speechHistory.length - 1].split(' ');
+        if (!isStillSpeakingAfterTerminator(lastWord[lastWord.length - 1], terminatorKeywords)) {
+          endKeywordDetectedRef.current = true;
+          if (typeof startKeywordDetectedRef.current !== 'undefined' &&
+            !startKeywordDetectedRef.current) {
+            stopUttering();
+          } else {
+            stopByDetectEndKeyword();
+          }
+        } else {
+          clearTimeout(timeoutId);
+        }
+      }, terminatorWaitTime * 1000);
+    }
+  }
+
+  const stopUtteringIfKeywordDetected = (text: string, stopUtteringKeywords: string) => {
+    if (!startKeywordDetectedRef.current && typeof endKeywordDetectedRef.current === 'undefined') {
+      const stopKeyword = extractStartKeyword(text, stopUtteringKeywords)
+      if (stopKeyword !== null) {
+        stopUttering();
+      }
+    }
+  }
+
+  const detectVoiceCommand = (text: string) => {
+    if ((typeof startKeywordDetectedRef.current == 'undefined' || !startKeywordDetectedRef.current) &&
+      (typeof endKeywordDetectedRef.current == 'undefined' || !endKeywordDetectedRef.current)) {
+      const voiceCommand = checkIsVoiceCommand(text);
+
+      if (typeof voiceCommand !== "undefined" && voiceCommand) {
+        runVoiceCommand(voiceCommand);
+        return;
+      }
+    }
+  }
 
   const onSpeechRecognized = async (data: WordRecognized) => {
     try {
@@ -286,56 +344,17 @@ export const GoogleSttChat = () => {
       }
 
       // Detect starting keyword
-      if (
-        typeof startKeywordDetectedRef.current !== 'undefined' &&
-        !startKeywordDetectedRef.current &&
-        !isUttering
-      ) {
-        const keyword = extractStartKeyword(interimRef.current, settings[0].settings.wakeKeywords ?? wakeKeywords);
-        if (keyword !== null) {
-          processStartKeyword();
-        }
-      }
+      detectStartingKeyword(interimRef.current, settings[0].settings.wakeKeywords ?? wakeKeywords)
 
       // Stop the uttering if the user says the keyword to stop
-      if (!startKeywordDetectedRef.current && typeof endKeywordDetectedRef.current === 'undefined') {
-        const stopKeyword = extractStartKeyword(interimRef.current, settings[0].settings.stopUtteringWords ?? stopUtteringWords)
-        if (stopKeyword !== null) {
-          stopUttering();
-        }
-      }
+      stopUtteringIfKeywordDetected(interimRef.current, settings[0].settings.stopUtteringWords ?? stopUtteringWords)
 
       // Detect end keyword and stop recording if detected in case that was the last word
-      if (
-        detectEndKeyword(interimRef.current, settings[0].settings.terminatorKeywords ?? terminatorKeywords) &&
-        !endKeywordDetectedRef.current
-      ) {
-        const timeoutId = setTimeout(() => {
-          const lastWord = interimsRef.current[interimsRef.current.length - 1].split(' ');
-          if (!isStillSpeakingAfterTerminator(lastWord[lastWord.length - 1], settings[0].settings.terminatorKeywords)) {
-            endKeywordDetectedRef.current = true;
-            if (typeof startKeywordDetectedRef.current !== 'undefined' &&
-              !startKeywordDetectedRef.current) {
-              stopUttering();
-            } else {
-              stopByDetectEndKeyword();
-            }
-          } else {
-            clearTimeout(timeoutId);
-          }
-        }, terminatorWaitTime * 1000);
-      }
+      sendRequestIfTerminatorKeywordDetected(interimRef.current, interimsRef.current, settings[0].settings.terminatorKeywords ?? terminatorKeywords)
 
-      if ((typeof startKeywordDetectedRef.current == 'undefined' || !startKeywordDetectedRef.current) &&
-        (typeof endKeywordDetectedRef.current == 'undefined' || !endKeywordDetectedRef.current)) {
-        const reversedInterims = interimsRef.current[interimsRef.current.length - 1] ?? '';
-        const voiceCommand = checkIsVoiceCommand(reversedInterims);
+      const reversedInterims = interimsRef.current[interimsRef.current.length - 1] ?? '';
+      detectVoiceCommand(reversedInterims);
 
-        if (typeof voiceCommand !== "undefined" && voiceCommand) {
-          runVoiceCommand(voiceCommand);
-          return;
-        }
-      }
     } catch (error) {
       console.error('An error occurred in onSpeechRecognized:', error);
     }
@@ -720,7 +739,7 @@ export const GoogleSttChat = () => {
   useEffect(() => {
     if (firstMessage && storedMessagesRef.current.length === 1)
       startUttering(firstMessage);
-  }, [firstMessage]);
+  }, [firstMessage, startUttering]);
 
   useEffect(() => {
     if (noti && noti.type === 'success') {
@@ -745,12 +764,6 @@ export const GoogleSttChat = () => {
         flagsDispatch({ type: FlagsActions.START_UTTERING });
       }
     }
-    // window.addEventListener('message', handleStopUttering);
-    // return () => {
-    //   window.removeEventListener('message', handleStopUttering);
-    //   // release resource on component unmount
-    //   cleanUpResources();
-    // };
 
     if (isWhisperEnabled) {
       async function startWhisper() {
@@ -758,31 +771,29 @@ export const GoogleSttChat = () => {
         await startListening();
       }
       startWhisper();
-      window.addEventListener('message', handleStopUttering);
-
     } else {
       async function startWithoutWhisper() {
         await startListening();
       }
       startWithoutWhisper();
-      window.addEventListener('message', handleStopUttering);
-
     }
+    window.addEventListener('message', handleStopUttering);
 
     return () => {
       window.removeEventListener('message', handleStopUttering);
       // release resource on component unmount
       cleanUpResources();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const isRequestReadyForTranscription = () => {
+  const isRequestReadyForTranscription = useCallback(() => {
     return !isSending &&
       !isTranscriptionDone &&
       openaiRequest &&
       ((isWhisperEnabled && !recording && transcript.blob?.size > 44)
         || (!isWhisperEnabled && !isRecording))
-  }
+  }, [isRecording, isSending, isTranscriptionDone, isWhisperEnabled, openaiRequest, recording, transcript.blob?.size])
 
   /**
    * check before sending audio blob to Whisper for transcription
@@ -793,7 +804,7 @@ export const GoogleSttChat = () => {
         flagsDispatch({ type: FlagsActions.STOP_TRANSCRIPTION });
       });
     }
-  }, [isRecording, isSending, isTranscriptionDone, openaiRequest, recording, transcript.blob, isWhisperEnabled]);
+  }, [isRequestReadyForTranscription]);
 
   useEffect(() => {
     if (
@@ -811,13 +822,7 @@ export const GoogleSttChat = () => {
     ) {
       stopAutoStopTimeout();
     }
-  }, [
-    isAutoStop,
-    isRecording,
-    recording,
-    isFinalData,
-    startKeywordDetectedRef.current,
-  ]);
+  }, [isAutoStop, isRecording, recording, isFinalData]);
 
   useEffect(() => {
     if (speechRef.current) {
