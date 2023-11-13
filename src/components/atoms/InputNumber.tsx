@@ -1,13 +1,40 @@
+import debounce from 'lodash/debounce';
+import { useCallback, useMemo, useState } from 'react';
+
 const InputNumber = ({ label, value, onChange }: { label: string, value: number, onChange: (value: number) => void }) => {
+
+  const [inputValue, setInputValue] = useState(value);
+
+  const updateValue = useCallback((value: number) => {
+    onChange(value);
+  }, []);
+
+  const debouncedOnChange = useMemo(() => {
+    return debounce(updateValue, 1000);
+  }, [updateValue]);
+
+  const onChangeValue = (e) => {
+    setInputValue(e.target.value);
+    debouncedOnChange(e.target.value);
+  }
+
   const increment = () => {
-    onChange(value + 1);
+    setInputValue(prev => {
+      debouncedOnChange(prev + 1);
+      return prev + 1
+    });
+
   };
 
   const decrement = () => {
-    if (value > 0) {
-      onChange(value - 1);
-    }
+    setInputValue(prev => {
+      if (prev > 0) {
+        debouncedOnChange(prev - 1);
+        return prev - 1
+      }
+    });
   };
+
   return (
     <div className='custom-number-input text-right'>
       <div className="flex flex-row text-left justify-between items-center">
@@ -22,10 +49,10 @@ const InputNumber = ({ label, value, onChange }: { label: string, value: number,
           </button>
           <input
             type='number'
-            className='text-md md:text-basecursor-default mr-[1px] flex h-9 w-full items-center border-none font-semibold text-gray-700 outline-none hover:text-black focus:text-black focus:outline-none'
+            className='text-sm md:text-basecursor-default mr-[1px] flex h-9 w-full items-center border-none font-semibold text-gray-700 outline-none hover:text-black focus:text-black focus:outline-none'
             name='custom-input-number'
-            value={value}
-            onChange={(e) => onChange(Number.parseInt(e.target.value))}
+            value={inputValue}
+            onChange={onChangeValue}
           />
           <button
             data-action='increment'

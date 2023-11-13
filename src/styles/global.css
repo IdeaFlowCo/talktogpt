@@ -97,6 +97,8 @@ input[type='number']::-webkit-outer-spin-button {
 
 .custom-number-input input:focus {
   outline: none !important;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .custom-number-input button:focus {
