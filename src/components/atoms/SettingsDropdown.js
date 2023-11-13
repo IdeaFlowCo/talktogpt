@@ -1,19 +1,27 @@
-import { Switch, Popover, Transition } from '@headlessui/react';
+import { Popover, Transition } from '@headlessui/react';
 import { Fragment, useState } from 'react';
 import { usePopper } from 'react-popper';
 import InputNumber from './InputNumber';
 import SwitchControl from './SwitchControl';
 import { SettingIcon } from 'assets/icons/SettingIcon';
+import InputText from './InputText';
+import { STOP_UTTERING_WORDS, TERMINATOR_WORDS, WAKE_WORDS } from 'components/chat/constants';
 
 export default function SettingsDropdown({
   autoStopTimeout,
   isAutoStop,
   isWhisperEnabled,
   terminatorWaitTime,
+  wakeKeywords,
+  stopUtteringWords,
+  terminatorKeywords,
   onChangeAutoStopTimeout,
   onChangeIsAutoStop,
   onChangeIsWhisperEnabled,
-  onChangeTerminatorWaitTime
+  onChangeTerminatorWaitTime,
+  onChangeWakeWord,
+  onChangeStopUtteringWord,
+  onChangeTerminatorWord
 }) {
   let [referenceElement, setReferenceElement] = useState();
   let [popperElement, setPopperElement] = useState();
@@ -53,6 +61,10 @@ export default function SettingsDropdown({
               <SwitchControl label='Enable Whisper' value={isWhisperEnabled} onChange={onChangeIsWhisperEnabled} />
               <hr className='my-4' />
               <InputNumber label='Terminator timeout' value={terminatorWaitTime} onChange={onChangeTerminatorWaitTime} />
+              <hr className='my-4' />
+              <InputText label='Wake word' value={wakeKeywords} placeholder={`Default value: ${WAKE_WORDS}`} onChange={onChangeWakeWord} />
+              <InputText label='Stop uttering word' value={stopUtteringWords} placeholder={`Default value: ${STOP_UTTERING_WORDS}`} onChange={onChangeStopUtteringWord} />
+              <InputText label='Terminator word' value={terminatorKeywords} placeholder={`Default value: ${TERMINATOR_WORDS}`} onChange={onChangeTerminatorWord} />
               <hr className='my-4' />
               <SwitchControl label='Automatic respond' value={isAutoStop} onChange={onChangeIsAutoStop} />
               <InputNumber label='Auto-stop timeout' value={autoStopTimeout} onChange={onChangeAutoStopTimeout} />

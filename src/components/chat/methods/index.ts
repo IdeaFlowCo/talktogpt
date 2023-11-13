@@ -1,6 +1,6 @@
 import { VoiceCommand } from '../../../types/useWhisperTypes';
 import wordsToNumbers from 'words-to-numbers';
-import { END_WORDS, WAKE_WORDS, VOICE_COMMANDS } from '../constants';
+import { TERMINATOR_WORDS, WAKE_WORDS, VOICE_COMMANDS } from '../constants';
 import { Message } from 'ai';
 
 type VoiceCommandAction =
@@ -71,8 +71,8 @@ export const checkIsVoiceCommand = (text: string): VoiceCommand | undefined => {
   return undefined;
 };
 
-export const extractStartKeyword = (interimText: string): string | null => {
-  const wake_words = process.env.NEXT_PUBLIC_WAKEWORDS?.split(',') || WAKE_WORDS;
+export const extractStartKeyword = (interimText: string, wakeWords: string): string | null => {
+  const wake_words = wakeWords?.split(',') || WAKE_WORDS.split(',');
   for (const keyword of wake_words) {
     if (sanitizeText(interimText).includes(sanitizeText(keyword))) {
       return keyword;
@@ -89,9 +89,9 @@ export const trimText = (text: string): string => {
   return `${textStripCommas.charAt(0).toLocaleUpperCase()}${textStripCommas.substring(1)}`;
 };
 
-export const removeInitialKeyword = (text: string): string => {
+export const removeInitialKeyword = (text: string, wakeWords: string): string => {
   const lowerCaseText = text.toLowerCase();
-  const wake_words = process.env.NEXT_PUBLIC_WAKEWORDS?.split(',') || WAKE_WORDS;
+  const wake_words = wakeWords?.split(',') || WAKE_WORDS?.split(',');
   wake_words.forEach((keyword) => {
     const last_keyword_chunk = keyword.split(' ').reverse()[0];
     const keywordIndex = lowerCaseText.indexOf(sanitizeText(last_keyword_chunk));
@@ -103,8 +103,8 @@ export const removeInitialKeyword = (text: string): string => {
   return text;
 }
 
-export const removeTerminatorKeyword = (text: string): string => {
-  const end_words = process.env.NEXT_PUBLIC_ENDWORDS?.split(',') || END_WORDS;
+export const removeTerminatorKeyword = (text: string, terminatorWords: string): string => {
+  const end_words = terminatorWords?.split(',') || TERMINATOR_WORDS.split(',');
   end_words.forEach((keyword) => {
     const lastChunk = text.split(' ').reverse()[0].toLocaleLowerCase();
     if (lastChunk.includes(keyword.toLocaleLowerCase())) {
@@ -147,9 +147,9 @@ export const whisperTranscript = async (base64: string): Promise<string> => {
   }
 };
 
-export const detectEndKeyword = (interimText: string): boolean => {
+export const detectEndKeyword = (interimText: string, terminatorKeywords: string): boolean => {
   let isKeywordDetected = false;
-  const end_words = process.env.NEXT_PUBLIC_ENDWORDS?.split(',') || END_WORDS;
+  const end_words = terminatorKeywords.split(',') || TERMINATOR_WORDS.split(',');
   for (const keyword of end_words) {
     isKeywordDetected ||= sanitizeText(interimText).includes(sanitizeText(keyword));
   }

@@ -1,5 +1,7 @@
-export const WAKE_WORDS = ['flow', 'slow', 'start dictation'];
-export const END_WORDS = ['over', 'end dictation'];
+export const WAKE_WORDS = 'over';
+export const STOP_UTTERING_WORDS = 'pause';
+export const TERMINATOR_WORDS = 'terminator';
+export const TERMINATOR_WORD_TIMEOUT = 1; // 1 second
 export const STOP_TIMEOUT = 2; // 2 seconds
 export const BE_CONCISE = 'Please, be concise.';
 
