@@ -290,7 +290,7 @@ export const GoogleSttChat = () => {
         flagsDispatch({ type: FlagsActions.NOT_FINAL_DATA_RECEIVED });
       }
 
-      // Detect staring keyword and start recording if detected
+      // Detect starting keyword
       if (
         typeof startKeywordDetectedRef.current !== 'undefined' &&
         !startKeywordDetectedRef.current &&
@@ -302,7 +302,15 @@ export const GoogleSttChat = () => {
         }
       }
 
-      // Detect end keyword and stop recording if detected
+      // Stop the uttering if the user says the keyword to stop
+      if (!startKeywordDetectedRef.current && typeof endKeywordDetectedRef.current === 'undefined') {
+        const stopKeyword = extractStartKeyword(interimRef.current, settings[0].settings.stopUtteringWords ?? stopUtteringWords)
+        if (stopKeyword !== null) {
+          stopUttering();
+        }
+      }
+
+      // Detect end keyword and stop recording if detected in case that was the last word
       if (
         detectEndKeyword(interimRef.current, settings[0].settings.terminatorKeywords ?? terminatorKeywords) &&
         !endKeywordDetectedRef.current
@@ -310,7 +318,6 @@ export const GoogleSttChat = () => {
         const timeoutId = setTimeout(() => {
           const lastWord = interimsRef.current[interimsRef.current.length - 1].split(' ');
           if (!isStillSpeakingAfterTerminator(lastWord[lastWord.length - 1], settings[0].settings.terminatorKeywords)) {
-
             endKeywordDetectedRef.current = true;
             if (typeof startKeywordDetectedRef.current !== 'undefined' &&
               !startKeywordDetectedRef.current) {
@@ -321,7 +328,6 @@ export const GoogleSttChat = () => {
           } else {
             clearTimeout(timeoutId);
           }
-
         }, terminatorWaitTime * 1000);
       }
 
