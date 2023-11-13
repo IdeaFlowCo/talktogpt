@@ -27,6 +27,7 @@ import {
   TALKTOGPT_SOCKET_ENDPOINT,
   WAKE_WORDS,
   STOP_UTTERING_WORDS,
+  TERMINATOR_WORD_TIMEOUT,
 } from './constants';
 import { isAndroid } from 'react-device-detect';
 import { initialFlagsState, FlagsActions, flagsReducer } from './reducers/flags';
@@ -44,12 +45,6 @@ interface WordRecognized {
   isFinal: boolean;
   text: string;
 }
-
-const defaultMessage: Message = {
-  content: `Welcome to Flow, your voice assistant. To activate flow, turn on the microphone. Then when you want to ask Flow a question and say “Flow, write a poem about Doug Engelbart” or anything else you would like to ask. You can switch to always on mode which allows you to speak, slowly, and end an utterance by saying “Over”.`,
-  role: 'assistant',
-  id: 'initial-message',
-};
 
 export const GoogleSttChat = () => {
   const auth = useAuth();
@@ -705,14 +700,14 @@ export const GoogleSttChat = () => {
     if (auth.user?.id && userSettings?.data?.length > 0) {
       controlsDispatch({
         type: ControlsActions.UPDATE_SETTINGS, values: {
-          autoStopTimeout: userSettings.data[0].settings.autoStopTimeout,
-          speakingRate: userSettings.data[0].settings.speakingRate,
-          isAutoStop: userSettings.data[0].settings.isAutoStop,
-          isWhisperEnabled: userSettings.data[0].settings.isWhisperEnabled,
-          terminatorWaitTime: userSettings.data[0].settings.terminatorWaitTime,
-          wakeKeywords: userSettings.data[0].settings.wakeKeywords,
-          stopUtteringWords: userSettings.data[0].settings.stopUtteringWords,
-          terminatorKeywords: userSettings.data[0].settings.terminatorKeywords
+          autoStopTimeout: userSettings.data[0].settings.autoStopTimeout ?? STOP_TIMEOUT,
+          speakingRate: userSettings.data[0].settings.speakingRate ?? 1,
+          isAutoStop: userSettings.data[0].settings.isAutoStop ?? true,
+          isWhisperEnabled: userSettings.data[0].settings.isWhisperEnabled ?? true,
+          terminatorWaitTime: userSettings.data[0].settings.terminatorWaitTime ?? TERMINATOR_WORD_TIMEOUT,
+          wakeKeywords: userSettings.data[0].settings.wakeKeywords ?? WAKE_WORDS,
+          stopUtteringWords: userSettings.data[0].settings.stopUtteringWords ?? STOP_UTTERING_WORDS,
+          terminatorKeywords: userSettings.data[0].settings.terminatorKeywords ?? TERMINATOR_WORDS
         }
       })
     }
@@ -885,6 +880,12 @@ export const GoogleSttChat = () => {
     controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, terminatorKeywords: value } })
     updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, terminatorKeywords: value } })
   }
+
+  const defaultMessage: Message = {
+    content: `Welcome to Flow, your voice assistant. To activate flow, turn on the microphone. Then when you want to ask Flow a question and say “${wakeKeywords.split(',')[0]}, write a poem about Doug Engelbart” or anything else you would like to ask. You can switch to always on mode which allows you to speak, slowly, and end an utterance by saying “${terminatorKeywords.split(',')[0]}”.`,
+    role: 'assistant',
+    id: 'initial-message',
+  };
 
   return (
     <div className='flex h-full w-screen flex-col'>
