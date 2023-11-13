@@ -4,7 +4,7 @@ import Alert from 'components/atoms/Alert';
 import GoogleSTTInput from 'components/atoms/GoogleSTTInput';
 import InterimHistory from 'components/atoms/InterimHistory';
 import type { Harker } from 'hark';
-import { useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import io, { type Socket } from 'socket.io-client';
 import { type VoiceCommand } from 'types/useWhisperTypes';
 import { useAuth } from 'util/auth';
@@ -22,9 +22,11 @@ import {
 } from './methods';
 import {
   BE_CONCISE,
-  END_WORDS,
+  TERMINATOR_WORDS,
   STOP_TIMEOUT,
   TALKTOGPT_SOCKET_ENDPOINT,
+  WAKE_WORDS,
+  STOP_UTTERING_WORDS,
 } from './constants';
 import { isAndroid } from 'react-device-detect';
 import { initialFlagsState, FlagsActions, flagsReducer } from './reducers/flags';
@@ -95,7 +97,10 @@ export const GoogleSttChat = () => {
     speakingRate,
     isAutoStop,
     isWhisperEnabled,
-    terminatorWaitTime
+    terminatorWaitTime,
+    wakeKeywords,
+    stopUtteringWords,
+    terminatorKeywords
   }, controlsDispatch] = useReducer(controlsReducer, initialControlsState);
 
   const { recording, transcript, startRecording, stopRecording } = useWhisper({
@@ -106,7 +111,6 @@ export const GoogleSttChat = () => {
     },
   });
 
-  // const [playSonar] = useSound('/sounds/sonar.mp3', { volume: 0.3 });
 
   const prepareUseWhisper = async () => {
     if (!isWhisperPrepared) {
@@ -203,43 +207,14 @@ export const GoogleSttChat = () => {
     startUttering(storedMessagesRef.current[lastSpeechIndexRef.current]);
   }
 
-  useEffect(() => {
-    if (auth.user?.id && userSettings?.data?.length <= 0) {
-      createSettings({
-        settings: {
-          autoStopTimeout: STOP_TIMEOUT,
-          speakingRate: 1,
-          isAutoStop: true,
-          isWhisperEnabled: true,
-          terminatorWaitTime: 1
-        }, user_id: auth.user?.id
-      })
-    }
 
-    if (auth.user?.id && userSettings?.data?.length > 0) {
-      controlsDispatch({
-        type: ControlsActions.UPDATE_SETTINGS, values: {
-          autoStopTimeout: userSettings.data[0].settings.autoStopTimeout,
-          speakingRate: userSettings.data[0].settings.speakingRate,
-          isAutoStop: userSettings.data[0].settings.isAutoStop,
-          isWhisperEnabled: userSettings.data[0].settings.isWhisperEnabled,
-          terminatorWaitTime: userSettings.data[0].settings.terminatorWaitTime
-        }
-      })
-    }
-  }, [auth.user?.id, userSettings.data])
-
-  useEffect(() => {
-    if (firstMessage && storedMessagesRef.current.length === 1)
-      startUttering(firstMessage);
-  }, [firstMessage]);
 
   const forceStopRecording = async () => {
     if (isWhisperEnabled) {
       await stopRecording();
     }
-    const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(interim))
-    const requestWithoutKeywords = removeTerminatorKeyword(requestWithoutInitialKeywords)
+    const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(interim), wakeKeywords)
+    const requestWithoutKeywords = removeTerminatorKeyword(requestWithoutInitialKeywords, terminatorKeywords)
     setOpenaiRequest(requestWithoutKeywords)
 
     startKeywordDetectedRef.current = false;
@@ -270,12 +245,13 @@ export const GoogleSttChat = () => {
     startKeywordDetectedRef.current = true;
   };
 
-  const isStillSpeakingAfterTerminator = (lastWord: string) => {
-    const endWords = process.env.NEXT_PUBLIC_ENDWORDS?.split(',') || END_WORDS;
-    const matchWord = endWords.find((word) => {
+  const isStillSpeakingAfterTerminator = (lastWord: string, terminatorKeywords: string) => {
+    const endWords = terminatorKeywords ?? TERMINATOR_WORDS;
+    const matchWord = endWords.split(',').find((word) => {
       return lastWord.toLocaleLowerCase().includes(word.toLocaleLowerCase());
     });
-    return typeof matchWord !== 'undefined';
+
+    return typeof matchWord === 'undefined';
   }
 
   const stopByDetectEndKeyword = () => {
@@ -286,8 +262,8 @@ export const GoogleSttChat = () => {
     }
 
     setOpenaiRequest(prev => {
-      const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(`${prev} ${interim}`))
-      const requestWithoutKeywords = removeTerminatorKeyword(requestWithoutInitialKeywords)
+      const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(`${prev} ${interim}`), wakeKeywords)
+      const requestWithoutKeywords = removeTerminatorKeyword(requestWithoutInitialKeywords, terminatorKeywords)
       return requestWithoutKeywords
     })
     endKeywordDetectedRef.current = false;
@@ -301,6 +277,7 @@ export const GoogleSttChat = () => {
 
   const onSpeechRecognized = async (data: WordRecognized) => {
     try {
+      const { data: settings } = await userSettings.refetch();
       interimRef.current += ` ${data.text}`;
       setInterim(data.text);
 
@@ -319,7 +296,7 @@ export const GoogleSttChat = () => {
         !startKeywordDetectedRef.current &&
         !isUttering
       ) {
-        const keyword = extractStartKeyword(interimRef.current);
+        const keyword = extractStartKeyword(interimRef.current, settings[0].settings.wakeKeywords ?? wakeKeywords);
         if (keyword !== null) {
           processStartKeyword();
         }
@@ -327,12 +304,13 @@ export const GoogleSttChat = () => {
 
       // Detect end keyword and stop recording if detected
       if (
-        detectEndKeyword(interimRef.current) &&
+        detectEndKeyword(interimRef.current, settings[0].settings.terminatorKeywords ?? terminatorKeywords) &&
         !endKeywordDetectedRef.current
       ) {
-        setTimeout(() => {
-          const lastWord = interimsRef.current.length > 0 ? interimsRef.current[interimsRef.current.length - 1].split(' ') : [];
-          if (isStillSpeakingAfterTerminator(lastWord?.pop())) {
+        const timeoutId = setTimeout(() => {
+          const lastWord = interimsRef.current[interimsRef.current.length - 1].split(' ');
+          if (!isStillSpeakingAfterTerminator(lastWord[lastWord.length - 1], settings[0].settings.terminatorKeywords)) {
+
             endKeywordDetectedRef.current = true;
             if (typeof startKeywordDetectedRef.current !== 'undefined' &&
               !startKeywordDetectedRef.current) {
@@ -340,6 +318,8 @@ export const GoogleSttChat = () => {
             } else {
               stopByDetectEndKeyword();
             }
+          } else {
+            clearTimeout(timeoutId);
           }
 
         }, terminatorWaitTime * 1000);
@@ -399,10 +379,10 @@ export const GoogleSttChat = () => {
       const transcribed = await transcribeAudio(transcript.blob);
       const transcriptionText = handleTranscriptionResults(transcribed);
       if (!transcriptionText) return;
-      text = removeTerminatorKeyword(transcriptionText);
+      text = removeTerminatorKeyword(transcriptionText, terminatorKeywords);
     } else {
       if (!openaiRequest) return;
-      text = openaiRequest;
+      text = removeTerminatorKeyword(openaiRequest, terminatorKeywords);
     }
 
     await submitTranscript(text);
@@ -532,6 +512,7 @@ export const GoogleSttChat = () => {
   };
 
   const startListening = async () => {
+    flagsDispatch({ type: FlagsActions.START_LISTENING });
     await prepareSocket();
 
     if (streamRef.current) {
@@ -567,14 +548,15 @@ export const GoogleSttChat = () => {
     audioContextRef.current.resume();
     audioInputRef.current.connect(processorRef.current);
 
-    flagsDispatch({ type: FlagsActions.START_LISTENING });
     socketRef.current?.emit('startGoogleCloudStream');
 
     processorRef.current.port.onmessage = ({ data: audio }) => {
       socketRef.current?.emit('send_audio_data', { audio });
     };
-    // await stopRecording();
-    // await startRecording();
+    if (isWhisperEnabled) {
+      await stopRecording();
+      await startRecording();
+    }
   };
 
   const stopAutoStopTimeout = () => {
@@ -661,10 +643,8 @@ export const GoogleSttChat = () => {
     if (!isAndroid || (isAndroid && !globalThis.ReactNativeWebView)) {
       if (isUttering) {
         stopUttering();
-      } else {
-        if (lastMessage) {
-          startUttering(lastMessage);
-        }
+      } else if (lastMessage) {
+        startUttering(lastMessage);
       }
     } else {
       globalThis.ReactNativeWebView.postMessage(
@@ -700,6 +680,47 @@ export const GoogleSttChat = () => {
     }
   };
 
+  const createOrUpdateUserSettings = useCallback(() => {
+    if (auth.user?.id && userSettings?.data?.length <= 0) {
+      createSettings({
+        settings: {
+          autoStopTimeout: STOP_TIMEOUT,
+          speakingRate: 1,
+          isAutoStop: true,
+          isWhisperEnabled: true,
+          terminatorWaitTime: 1,
+          wakeKeywords: WAKE_WORDS,
+          stopUtteringWords: STOP_UTTERING_WORDS,
+          terminatorKeywords: TERMINATOR_WORDS
+        }, user_id: auth.user?.id
+      })
+    }
+
+    if (auth.user?.id && userSettings?.data?.length > 0) {
+      controlsDispatch({
+        type: ControlsActions.UPDATE_SETTINGS, values: {
+          autoStopTimeout: userSettings.data[0].settings.autoStopTimeout,
+          speakingRate: userSettings.data[0].settings.speakingRate,
+          isAutoStop: userSettings.data[0].settings.isAutoStop,
+          isWhisperEnabled: userSettings.data[0].settings.isWhisperEnabled,
+          terminatorWaitTime: userSettings.data[0].settings.terminatorWaitTime,
+          wakeKeywords: userSettings.data[0].settings.wakeKeywords,
+          stopUtteringWords: userSettings.data[0].settings.stopUtteringWords,
+          terminatorKeywords: userSettings.data[0].settings.terminatorKeywords
+        }
+      })
+    }
+  }, [auth.user?.id, userSettings.data])
+
+  useEffect(() => {
+    createOrUpdateUserSettings();
+  }, [createOrUpdateUserSettings])
+
+  useEffect(() => {
+    if (firstMessage && storedMessagesRef.current.length === 1)
+      startUttering(firstMessage);
+  }, [firstMessage]);
+
   useEffect(() => {
     if (noti && noti.type === 'success') {
       setTimeout(() => {
@@ -723,16 +744,28 @@ export const GoogleSttChat = () => {
         flagsDispatch({ type: FlagsActions.START_UTTERING });
       }
     }
+    // window.addEventListener('message', handleStopUttering);
+    // return () => {
+    //   window.removeEventListener('message', handleStopUttering);
+    //   // release resource on component unmount
+    //   cleanUpResources();
+    // };
+
     if (isWhisperEnabled) {
-      prepareUseWhisper().then(() => {
-        startListening().then(() => {
-          window.addEventListener('message', handleStopUttering);
-        });
-      });
+      async function startWhisper() {
+        await prepareUseWhisper();
+        await startListening();
+      }
+      startWhisper();
+      window.addEventListener('message', handleStopUttering);
+
     } else {
-      startListening().then(() => {
-        window.addEventListener('message', handleStopUttering);
-      });
+      async function startWithoutWhisper() {
+        await startListening();
+      }
+      startWithoutWhisper();
+      window.addEventListener('message', handleStopUttering);
+
     }
 
     return () => {
@@ -746,7 +779,8 @@ export const GoogleSttChat = () => {
     return !isSending &&
       !isTranscriptionDone &&
       openaiRequest &&
-      ((isWhisperEnabled && !recording && transcript.blob?.size > 44) || (!isWhisperEnabled && !isRecording))
+      ((isWhisperEnabled && !recording && transcript.blob?.size > 44)
+        || (!isWhisperEnabled && !isRecording))
   }
 
   /**
@@ -831,6 +865,21 @@ export const GoogleSttChat = () => {
     updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, terminatorWaitTime: value } })
   }
 
+  const onChangeWakeWord = (value: string) => {
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, wakeKeywords: value } })
+    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, wakeKeywords: value } })
+  }
+
+  const onChangeStopUtteringWord = (value: string) => {
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, stopUtteringWords: value } })
+    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, stopUtteringWords: value } })
+  }
+
+  const onChangeTerminatorWord = (value: string) => {
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, terminatorKeywords: value } })
+    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, terminatorKeywords: value } })
+  }
+
   return (
     <div className='flex h-full w-screen flex-col'>
       <div
@@ -865,12 +914,18 @@ export const GoogleSttChat = () => {
         speakingRate={speakingRate}
         isWhisperEnabled={isWhisperEnabled}
         terminatorWaitTime={terminatorWaitTime}
+        wakeKeywords={wakeKeywords}
+        stopUtteringWords={stopUtteringWords}
+        terminatorKeywords={terminatorKeywords}
         onChangeAutoStopTimeout={onChangeAutoStopTimeout}
         onChangeIsAutoStop={onChangeIsAutoStop}
         onChangeSpeakingRate={onChangeSpeakingRate}
         onToggleUttering={toggleUttering}
         onChangeIsWhisperEnabled={onChangeIsWhisperEnabled}
         onChangeTerminatorWaitTime={onChangeTerminatorWaitTime}
+        onChangeWakeWord={onChangeWakeWord}
+        onChangeStopUtteringWord={onChangeStopUtteringWord}
+        onChangeTerminatorWord={onChangeTerminatorWord}
       />
       {noti ? (
         <Alert

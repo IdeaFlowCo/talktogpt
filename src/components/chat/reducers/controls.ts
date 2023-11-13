@@ -1,4 +1,4 @@
-import { STOP_TIMEOUT } from "../constants";
+import { STOP_TIMEOUT, STOP_UTTERING_WORDS, TERMINATOR_WORDS, TERMINATOR_WORD_TIMEOUT, WAKE_WORDS } from "../constants";
 
 interface GoogleSttControlsState {
   speakingRate?: number;
@@ -6,7 +6,7 @@ interface GoogleSttControlsState {
   isAutoStop?: boolean;
   isWhisperEnabled?: boolean;
   wakeKeywords?: string;
-  pauseWords?: string;
+  stopUtteringWords?: string;
   terminatorKeywords?: string;
   terminatorWaitTime?: number;
 }
@@ -25,11 +25,10 @@ export const initialControlsState: GoogleSttControlsState = {
   autoStopTimeout: STOP_TIMEOUT,
   isAutoStop: true,
   isWhisperEnabled: true,
-  wakeKeywords: 'over',
-  pauseWords: 'pause',
-  terminatorKeywords: 'over',
-  terminatorWaitTime: 1,
-
+  wakeKeywords: WAKE_WORDS,
+  stopUtteringWords: STOP_UTTERING_WORDS,
+  terminatorKeywords: TERMINATOR_WORDS,
+  terminatorWaitTime: TERMINATOR_WORD_TIMEOUT,
 };
 
 export function controlsReducer(state: GoogleSttControlsState, action: GoogleSttControlsAction) {
