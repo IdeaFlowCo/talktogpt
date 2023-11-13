@@ -834,51 +834,83 @@ export const GoogleSttChat = () => {
   }, [messages, interim]);
 
   const onChangeAutoStopTimeout = (value: number) => {
-    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, autoStopTimeout: value } })
-    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: value } })
+    userSettings.refetch().then(({ data }) => {
+      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, autoStopTimeout: value } })
+      updateSettings({ ...data[0], settings: { ...data[0].settings, autoStopTimeout: value } })
+    }).catch((error) => {
+      console.error(error)
+    })
   }
 
   const onChangeIsAutoStop = (value: boolean) => {
-    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, isAutoStop: value } })
-    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, isAutoStop: value } })
+    userSettings.refetch().then(({ data }) => {
+      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, isAutoStop: value } })
+      updateSettings({ ...data[0], settings: { ...data[0].settings, isAutoStop: value } })
+    }).catch((error) => {
+      console.error(error)
+    })
   }
 
   const onChangeIsWhisperEnabled = (value: boolean) => {
-    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, isWhisperEnabled: value } })
-    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, isWhisperEnabled: value } })
+    userSettings.refetch().then(({ data }) => {
+      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, isWhisperEnabled: value } })
+      updateSettings({ ...data[0], settings: { ...data[0].settings, isWhisperEnabled: value } })
+    }).catch((error) => {
+      console.error(error)
+    })
   }
 
   const onChangeSpeakingRate = (value: number) => {
-    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, speakingRate: value } })
-    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, speakingRate: value } })
-    if (isAndroid && globalThis.ReactNativeWebView) {
-      globalThis.ReactNativeWebView.postMessage(
-        JSON.stringify({
-          type: 'speaking-rate',
-          data: value,
-        })
-      );
-    }
+    userSettings.refetch().then(({ data }) => {
+      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, speakingRate: value } })
+      updateSettings({ ...data[0], settings: { ...data[0].settings, speakingRate: value } })
+      if (isAndroid && globalThis.ReactNativeWebView) {
+        globalThis.ReactNativeWebView.postMessage(
+          JSON.stringify({
+            type: 'speaking-rate',
+            data: value,
+          })
+        );
+      }
+    }).catch((error) => {
+      console.error(error)
+    })
   }
 
   const onChangeTerminatorWaitTime = (value: number) => {
-    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, terminatorWaitTime: value } })
-    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, terminatorWaitTime: value } })
+    userSettings.refetch().then(({ data }) => {
+      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, terminatorWaitTime: value } })
+      updateSettings({ ...data[0], settings: { ...data[0].settings, terminatorWaitTime: value } })
+    }).catch((error) => {
+      console.error(error)
+    })
   }
 
   const onChangeWakeWord = (value: string) => {
-    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, wakeKeywords: value } })
-    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, wakeKeywords: value } })
+    userSettings.refetch().then(({ data }) => {
+      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, wakeKeywords: value } })
+      updateSettings({ ...data[0], settings: { ...data[0].settings, wakeKeywords: value } })
+    }).catch((error) => {
+      console.error(error)
+    })
   }
 
   const onChangeStopUtteringWord = (value: string) => {
-    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, stopUtteringWords: value } })
-    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, stopUtteringWords: value } })
+    userSettings.refetch().then(({ data }) => {
+      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, stopUtteringWords: value } })
+      updateSettings({ ...data[0], settings: { ...data[0].settings, stopUtteringWords: value } })
+    }).catch((error) => {
+      console.error(error)
+    })
   }
 
   const onChangeTerminatorWord = (value: string) => {
-    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, terminatorKeywords: value } })
-    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, terminatorKeywords: value } })
+    userSettings.refetch().then(({ data }) => {
+      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, terminatorKeywords: value } })
+      updateSettings({ ...data[0], settings: { ...data[0].settings, terminatorKeywords: value } })
+    }).catch((error) => {
+      console.error(error)
+    })
   }
 
   const defaultMessage: Message = {
