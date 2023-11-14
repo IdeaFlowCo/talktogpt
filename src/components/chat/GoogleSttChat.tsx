@@ -464,12 +464,30 @@ export const GoogleSttChat = () => {
     });
   }
 
+  const toggleIsAutoStop = (value: boolean) => {
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, isAutoStop: value } });
+    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, isAutoStop: value } })
+  }
+
+  const makeAutoStopTimeoutFaster = () => {
+    const autoStopTimeoutValue = autoStopTimeout - 1 <= 0 ? 1 : autoStopTimeout - 1
+    controlsDispatch({
+      type: ControlsActions.UPDATE_SETTINGS,
+      values: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeoutValue }
+    })
+    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeoutValue } })
+  }
+
+  const makeAutoStopTimeoutSlower = () => {
+    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeout + 1 } })
+    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeout + 1 } })
+  }
+
   const runVoiceCommand = (voiceCommand: VoiceCommand) => {
     const action = getVoiceCommandAction(voiceCommand);
     switch (action?.type) {
       case 'SET_IS_AUTO_STOP':
-        controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, isAutoStop: action.value } });
-        updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, isAutoStop: action.value } })
+        toggleIsAutoStop(action.value);
         showSuccessMessage(`${voiceCommand.successMessage} ${voiceCommand.args ?? ''}`)
         break;
 
@@ -482,24 +500,16 @@ export const GoogleSttChat = () => {
         if (typeof action.value === 'number') {
           controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, autoStopTimeout: action.value } })
           updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: action.value } })
-          showSuccessMessage(`${voiceCommand.successMessage} ${voiceCommand.args ?? ''}`)
         }
-        if (typeof action.value === 'string') {
-          if (action.value === 'faster') {
-            const autoStopTimeoutValue = autoStopTimeout - 1 <= 0 ? 1 : autoStopTimeout - 1
-            controlsDispatch({
-              type: ControlsActions.UPDATE_SETTINGS,
-              values: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeoutValue }
-            })
-            updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeoutValue } })
-            showSuccessMessage(`${voiceCommand.successMessage} ${voiceCommand.args ?? ''}`)
-          }
-          if (action.value === 'slower') {
-            controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeout + 1 } })
-            updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeout + 1 } })
-          }
-          showSuccessMessage(`${voiceCommand.successMessage} ${voiceCommand.args ?? ''}`)
+
+        if (typeof action.value === 'string' && action.value === 'faster') {
+          makeAutoStopTimeoutFaster()
         }
+
+        if (typeof action.value === 'string' && action.value === 'slower') {
+          makeAutoStopTimeoutSlower()
+        }
+        showSuccessMessage(`${voiceCommand.successMessage} ${voiceCommand.args ?? ''}`)
 
         break;
       case 'SHOW_MESSAGE':
