@@ -208,7 +208,7 @@ export const GoogleSttChat = () => {
     if (isWhisperEnabled) {
       await stopRecording();
     }
-    const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(interim), wakeKeywords)
+    const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(interimsRef.current.join(' ')), wakeKeywords)
     const requestWithoutKeywords = removeTerminatorKeyword(requestWithoutInitialKeywords, terminatorKeywords)
     setOpenaiRequest(requestWithoutKeywords)
 
@@ -233,6 +233,7 @@ export const GoogleSttChat = () => {
       return
     }
     setInterim('');
+    interimsRef.current = [];
     if (isWhisperEnabled) {
       startRecording().then(() => {
         console.log("Whisper start recording")
@@ -259,7 +260,6 @@ export const GoogleSttChat = () => {
         console.log("Whisper stop recording")
       })
     }
-
     setOpenaiRequest(prev => {
       const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(`${prev} ${interim}`), wakeKeywords)
       const requestWithoutKeywords = removeTerminatorKeyword(requestWithoutInitialKeywords, terminatorKeywords)
@@ -955,10 +955,11 @@ export const GoogleSttChat = () => {
           ))}
           {((interim && !isLoading && isRecording) || isRequestReadyForTranscription()) ? (
             <ChatMessage
-              message={interim}
+              message={interimsRef.current.length > 1 ? `${interimsRef.current.slice(1, interimsRef.current.length - 1).join(' ')} ${interim}` : interim}
               sender='user'
               loading={true}
-            />) : null}
+            />
+          ) : null}
         </div>
       </div>
       <GoogleSTTPill
