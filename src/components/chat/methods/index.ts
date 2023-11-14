@@ -90,7 +90,7 @@ export const trimText = (text: string): string => {
 };
 
 export const removeInitialKeyword = (text: string, wakeWords: string): string => {
-  const lowerCaseText = text.toLowerCase();
+  const lowerCaseText = text.toLocaleLowerCase();
   const wake_words = wakeWords?.split(',') || WAKE_WORDS?.split(',');
   wake_words.forEach((keyword) => {
     const last_keyword_chunk = keyword.split(' ').reverse()[0];
