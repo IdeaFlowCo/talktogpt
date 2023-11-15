@@ -74,7 +74,7 @@ export const checkIsVoiceCommand = (text: string): VoiceCommand | undefined => {
 export const extractStartKeyword = (interimText: string, wakeWords: string): string | null => {
   const wake_words = wakeWords?.split(',') || WAKE_WORDS.split(',');
   for (const keyword of wake_words) {
-    if (sanitizeText(interimText).includes(sanitizeText(keyword))) {
+    if (sanitizeText(interimText).startsWith(sanitizeText(keyword))) {
       return keyword;
     }
   }

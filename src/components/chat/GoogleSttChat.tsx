@@ -65,6 +65,7 @@ export const GoogleSttChat = () => {
   const storedMessagesRef = useRef<string[]>(null);
   const lastSpeechIndexRef = useRef<number>(0);
   const isReadyToSpeech = useRef<boolean>(true);
+  const isUtteringRef = useRef<boolean>(false);
 
   const [firstMessage, setFirstMessage] = useState<string | null>(null);
   const [interim, setInterim] = useState<string>('');
@@ -122,6 +123,7 @@ export const GoogleSttChat = () => {
   // Uttering functions
   const onStartUttering = () => {
     flagsDispatch({ type: FlagsActions.START_UTTERING });
+    isUtteringRef.current = true;
   };
 
   const onStopUttering = () => {
@@ -130,6 +132,7 @@ export const GoogleSttChat = () => {
       startUttering(storedMessagesRef.current[lastSpeechIndexRef.current]);
     } else {
       flagsDispatch({ type: FlagsActions.STOP_UTTERING });
+      isUtteringRef.current = false;
     }
   };
 
@@ -138,6 +141,7 @@ export const GoogleSttChat = () => {
       return;
     }
     flagsDispatch({ type: FlagsActions.START_UTTERING });
+    isUtteringRef.current = true;
     if (!isAndroid || (isAndroid && !globalThis.ReactNativeWebView)) {
       if (!speechRef.current) {
         speechRef.current = new SpeechSynthesisUtterance();
@@ -207,6 +211,7 @@ export const GoogleSttChat = () => {
   const forceStopRecording = async () => {
     if (isWhisperEnabled) {
       await stopRecording();
+      flagsDispatch({ type: FlagsActions.STOP_RECORDING });
     }
     const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(interimsRef.current.join(' ')), wakeKeywords)
     const requestWithoutKeywords = removeTerminatorKeyword(requestWithoutInitialKeywords, terminatorKeywords)
@@ -229,14 +234,14 @@ export const GoogleSttChat = () => {
   };
 
   const processStartKeyword = () => {
-    if (isUttering) {
+    if (isUtteringRef.current) {
       return
     }
     setInterim('');
     interimsRef.current = [];
     if (isWhisperEnabled) {
       startRecording().then(() => {
-        console.log("Whisper start recording")
+        console.log("WHISPER START RECORDING")
       })
     }
     setOpenaiRequest('');
@@ -257,7 +262,8 @@ export const GoogleSttChat = () => {
   const stopByDetectEndKeyword = () => {
     if (isWhisperEnabled) {
       stopRecording().then(() => {
-        console.log("Whisper stop recording")
+        console.log("WHISPER STOP RECORDING")
+        flagsDispatch({ type: FlagsActions.STOP_RECORDING });
       })
     }
     setOpenaiRequest(prev => {
@@ -288,7 +294,8 @@ export const GoogleSttChat = () => {
   const sendRequestIfTerminatorKeywordDetected = (speech: string, speechHistory: string[], terminatorKeywords: string) => {
     if (
       detectEndKeyword(speech, terminatorKeywords) &&
-      !endKeywordDetectedRef.current
+      !endKeywordDetectedRef.current &&
+      speechHistory.length > 0
     ) {
       const timeoutId = setTimeout(() => {
         const lastWord = speechHistory[speechHistory.length - 1].split(' ');
@@ -344,13 +351,16 @@ export const GoogleSttChat = () => {
       }
 
       // Detect starting keyword
-      detectStartingKeyword(interimRef.current, settings[0].settings.wakeKeywords ?? wakeKeywords)
-
+      if (!isUtteringRef.current) {
+        detectStartingKeyword(interimRef.current, settings[0].settings.wakeKeywords ?? wakeKeywords)
+      }
       // Stop the uttering if the user says the keyword to stop
       stopUtteringIfKeywordDetected(interimRef.current, settings[0].settings.stopUtteringWords ?? stopUtteringWords)
 
       // Detect end keyword and stop recording if detected in case that was the last word
-      sendRequestIfTerminatorKeywordDetected(interimRef.current, interimsRef.current, settings[0].settings.terminatorKeywords ?? terminatorKeywords)
+      if (!isUtteringRef.current) {
+        sendRequestIfTerminatorKeywordDetected(interimRef.current, interimsRef.current, settings[0].settings.terminatorKeywords ?? terminatorKeywords)
+      }
 
       const reversedInterims = interimsRef.current[interimsRef.current.length - 1] ?? '';
       detectVoiceCommand(reversedInterims);
@@ -543,6 +553,9 @@ export const GoogleSttChat = () => {
 
   const startListening = async () => {
     flagsDispatch({ type: FlagsActions.START_LISTENING });
+    if (isWhisperEnabled) {
+      await prepareUseWhisper();
+    }
     await prepareSocket();
 
     if (streamRef.current) {
@@ -583,10 +596,10 @@ export const GoogleSttChat = () => {
     processorRef.current.port.onmessage = ({ data: audio }) => {
       socketRef.current?.emit('send_audio_data', { audio });
     };
-    if (isWhisperEnabled) {
-      await stopRecording();
-      await startRecording();
-    }
+    // if (isWhisperEnabled) {
+    //   await stopRecording();
+    //   await startRecording();
+    // }
   };
 
   const stopAutoStopTimeout = () => {
@@ -629,6 +642,7 @@ export const GoogleSttChat = () => {
     endKeywordDetectedRef.current = undefined;
     flagsDispatch({ type: FlagsActions.STOP_LOADING });
     flagsDispatch({ type: FlagsActions.STOP_UTTERING });
+    isUtteringRef.current = false;
   };
 
   const submitTranscript = async (text?: string) => {
@@ -657,7 +671,6 @@ export const GoogleSttChat = () => {
       });
       return;
     } catch (sendDetectedTranscriptError) {
-      console.error({ sendDetectedTranscriptError });
       flagsDispatch({ type: FlagsActions.STOP_SENDING_CHAT });
       showErrorMessage(NOTI_MESSAGES.gpt.error);
       return;
@@ -772,6 +785,7 @@ export const GoogleSttChat = () => {
       }
       if (type === 'speaking-force-start' && data === true) {
         flagsDispatch({ type: FlagsActions.START_UTTERING });
+        isUtteringRef.current = true;
       }
     }
 
@@ -800,9 +814,8 @@ export const GoogleSttChat = () => {
   const isRequestReadyForTranscription = useCallback(() => {
     return !isSending &&
       !isTranscriptionDone &&
-      openaiRequest &&
       ((isWhisperEnabled && !recording && transcript.blob?.size > 44)
-        || (!isWhisperEnabled && !isRecording))
+        || (!isWhisperEnabled && !isRecording && openaiRequest.length > 0))
   }, [isRecording, isSending, isTranscriptionDone, isWhisperEnabled, openaiRequest, recording, transcript.blob?.size])
 
   /**
@@ -810,9 +823,11 @@ export const GoogleSttChat = () => {
    */
   useEffect(() => {
     if (isRequestReadyForTranscription()) {
-      onTranscribe().then(() => {
-        flagsDispatch({ type: FlagsActions.STOP_TRANSCRIPTION });
-      });
+      flagsDispatch({ type: FlagsActions.STOP_TRANSCRIPTION });
+      const handleOnTranscribe = async () => {
+        await onTranscribe();
+      };
+      handleOnTranscribe();
     }
   }, [isRequestReadyForTranscription]);
 
@@ -933,7 +948,6 @@ export const GoogleSttChat = () => {
     role: 'assistant',
     id: 'initial-message',
   };
-
   return (
     <div className='flex h-full w-screen flex-col'>
       <div
@@ -948,7 +962,7 @@ export const GoogleSttChat = () => {
           />
           {messagesSplitByLine.map((message, index) => (
             <ChatMessage
-              key={index}
+              key={`${message.id}_${index}`}
               message={message.content}
               sender={message.role}
             />
