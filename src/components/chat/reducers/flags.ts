@@ -38,7 +38,7 @@ export enum FlagsActions {
 }
 
 export const initialFlagsState = {
-  isListening: true,
+  isListening: false,
   isLoading: false,
   isSending: false,
   isSpeaking: false,
