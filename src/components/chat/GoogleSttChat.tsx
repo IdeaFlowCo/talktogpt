@@ -775,18 +775,18 @@ export const GoogleSttChat = () => {
       }
     }
 
-    if (isWhisperEnabled) {
-      async function startWhisper() {
-        await prepareUseWhisper();
-        await startListening();
-      }
-      startWhisper();
-    } else {
-      async function startWithoutWhisper() {
-        await startListening();
-      }
-      startWithoutWhisper();
-    }
+    // if (isWhisperEnabled) {
+    //   async function startWhisper() {
+    //     await prepareUseWhisper();
+    //     await startListening();
+    //   }
+    //   startWhisper();
+    // } else {
+    //   async function startWithoutWhisper() {
+    //     await startListening();
+    //   }
+    //   startWithoutWhisper();
+    // }
     window.addEventListener('message', handleStopUttering);
 
     return () => {
