@@ -26,7 +26,10 @@ function ChatMessage({ message, sender, loading }: Readonly<ChatMessageProps>) {
         } 
         ${loading ? 'animate-pulse' : ''}`}
     >
-      <p className='flex text-md max-w-md gap-2'>{loading ? <ChatBubbleOvalLeftEllipsisIcon className='h-6 w-6' /> : ''} {filteredMessage} {loading ? '...' : ''}</p>
+      <div className='flex text-md max-w-md gap-2'>
+        {loading ? <span className='w-6'><ChatBubbleOvalLeftEllipsisIcon className='h-6 w-6' /></span> : ''}
+        <p>{filteredMessage} {loading ? '...' : ''}</p>
+      </div>
     </AppearAnimation>
   );
 }
