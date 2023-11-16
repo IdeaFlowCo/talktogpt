@@ -1,21 +1,37 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import AppearAnimation from './BasicAppearAnimation';
-import { BE_CONCISE } from 'components/chat/constants';
+import { BE_CONCISE, WAKE_WORDS } from 'components/chat/constants';
 import { ChatBubbleOvalLeftEllipsisIcon } from '@heroicons/react/20/solid';
+import { removeInitialKeyword, sanitizeText } from 'components/chat/methods';
 
 interface ChatMessageProps {
   message: string;
   sender: string;
   loading?: boolean;
+  finalMessage?: string;
+  wakeKeywords?: string;
 }
 
-function ChatMessage({ message, sender, loading }: Readonly<ChatMessageProps>) {
-  const indexOfBeConcise = message.indexOf(BE_CONCISE);
-  let filteredMessage = message;
-  if (indexOfBeConcise !== -1 && sender === 'user') {
-    filteredMessage = message.substring(0, indexOfBeConcise);
-  }
-  // END: ed8c6549bwf9
+function ChatMessage({ message, sender, loading, finalMessage = '', wakeKeywords = '' }: Readonly<ChatMessageProps>) {
+  const filteredMessage = useMemo(() => {
+    const indexOfBeConcise = message.indexOf(BE_CONCISE);
+    let filteredMessage = message;
+    if (indexOfBeConcise !== -1 && sender === 'user') {
+      filteredMessage = message.substring(0, indexOfBeConcise);
+    }
+    return filteredMessage;
+  }, [message, sender]);
+
+  const finalMessageWithoutWakeWords = useMemo(() => {
+    return removeInitialKeyword(finalMessage, wakeKeywords ?? WAKE_WORDS)
+  }, [finalMessage, wakeKeywords]);
+
+  const hideInterimText = useMemo(() => {
+    if (finalMessageWithoutWakeWords.length > 0) {
+      return sanitizeText(finalMessageWithoutWakeWords).includes(sanitizeText(filteredMessage));
+    }
+    return false;
+  }, [filteredMessage, finalMessageWithoutWakeWords]);
 
   return (
     <AppearAnimation
@@ -26,10 +42,17 @@ function ChatMessage({ message, sender, loading }: Readonly<ChatMessageProps>) {
         } 
         ${loading ? 'animate-pulse' : ''}`}
     >
-      <div className='flex text-md max-w-md gap-2'>
-        {loading ? <span className='w-6'><ChatBubbleOvalLeftEllipsisIcon className='h-6 w-6' /></span> : ''}
-        <p>{filteredMessage} {loading ? '...' : ''}</p>
-      </div>
+      {!loading ? (
+        <div className='flex text-md max-w-md gap-2'>
+          <p>{filteredMessage}</p>
+        </div>
+      ) : (
+        <div className='flex text-md max-w-md gap-2'>
+          <span className='w-6'><ChatBubbleOvalLeftEllipsisIcon className='h-6 w-6' /></span>
+          <p>{finalMessageWithoutWakeWords} {hideInterimText ? '' : filteredMessage} {loading ? '...' : ''}</p>
+        </div>
+      )}
+
     </AppearAnimation>
   );
 }

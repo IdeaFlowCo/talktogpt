@@ -70,6 +70,7 @@ export const GoogleSttChat = () => {
   const [firstMessage, setFirstMessage] = useState<string | null>(null);
   const [interim, setInterim] = useState<string>('');
   const [openaiRequest, setOpenaiRequest] = useState<string>('');
+  const [showBlueBubbleChat, setShowBlueBubbleChat] = useState<boolean>(false);
 
   const [noti, setNoti] = useState<{
     type: 'error' | 'success';
@@ -177,6 +178,7 @@ export const GoogleSttChat = () => {
       lastSpeechIndexRef.current = 0;
       storedMessagesRef.current = [];
     },
+
   });
 
   const messagesSplitByParagraph = splitTextsBySeparator(
@@ -187,6 +189,10 @@ export const GoogleSttChat = () => {
     messagesSplitByParagraph,
     TEXT_SEPARATORS.LINE_BREAK
   );
+
+  useEffect(() => {
+    setShowBlueBubbleChat(false);
+  }, [messages.length])
 
   const lastIndexUser = messagesSplitByLine.findLastIndex(
     (message) => message.role === 'user'
@@ -237,6 +243,7 @@ export const GoogleSttChat = () => {
     if (isUtteringRef.current) {
       return
     }
+    setShowBlueBubbleChat(true);
     setInterim('');
     interimsRef.current = [];
     if (isWhisperEnabled) {
@@ -967,11 +974,14 @@ export const GoogleSttChat = () => {
               sender={message.role}
             />
           ))}
-          {((interim && !isLoading && isRecording) || isRequestReadyForTranscription()) ? (
+
+          {showBlueBubbleChat ? (
             <ChatMessage
-              message={interimsRef.current.length > 1 ? `${interimsRef.current.slice(1, interimsRef.current.length - 1).join(' ')} ${interim}` : interim}
+              message={interim}
               sender='user'
               loading={true}
+              finalMessage={openaiRequest}
+              wakeKeywords={wakeKeywords}
             />
           ) : null}
         </div>
