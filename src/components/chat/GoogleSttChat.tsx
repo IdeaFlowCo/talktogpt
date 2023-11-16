@@ -217,6 +217,7 @@ export const GoogleSttChat = () => {
   const forceStopRecording = async () => {
     if (isWhisperEnabled) {
       await stopRecording();
+    } else {
       flagsDispatch({ type: FlagsActions.STOP_RECORDING });
     }
     const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(interimsRef.current.join(' ')), wakeKeywords)
@@ -841,14 +842,14 @@ export const GoogleSttChat = () => {
   useEffect(() => {
     if (
       isAutoStop &&
-      (isRecording || recording) &&
+      ((!isWhisperEnabled && isRecording) || (isWhisperEnabled && recording)) &&
       isFinalData &&
       startKeywordDetectedRef.current
     ) {
       startAutoStopTimeout();
     }
     if (
-      (isAutoStop && (!isRecording || !recording)) ||
+      (isAutoStop && ((!isWhisperEnabled && !isRecording) || (isWhisperEnabled && !recording))) ||
       !isFinalData ||
       !startKeywordDetectedRef.current
     ) {
