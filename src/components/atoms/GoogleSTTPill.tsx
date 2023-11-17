@@ -26,6 +26,7 @@ export default function GoogleSTTPill({
   return (
     <div className='flex h-10 min-w-[50%] flex-row items-center justify-center gap-4 self-center rounded-full bg-gray-300 sm:min-w-[25%]'>
       <SpeakingRateDropdown
+        disabled={isUttering}
         speakingRate={speakingRate}
         onChangeSpeakingRate={onChangeSpeakingRate}
       />
@@ -37,6 +38,7 @@ export default function GoogleSTTPill({
         )}
       </button>
       <SettingsDropdown
+        disabled={isUttering}
         autoStopTimeout={autoStopTimeout}
         isAutoStop={isAutoStop}
         isWhisperEnabled={isWhisperEnabled}

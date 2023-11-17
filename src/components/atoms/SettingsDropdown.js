@@ -6,8 +6,10 @@ import SwitchControl from './SwitchControl';
 import { SettingIcon } from 'assets/icons/SettingIcon';
 import InputText from './InputText';
 import { STOP_UTTERING_WORDS, TERMINATOR_WORDS, WAKE_WORDS } from 'components/chat/constants';
+import { set } from 'lodash';
 
 export default function SettingsDropdown({
+  disabled,
   autoStopTimeout,
   isAutoStop,
   isWhisperEnabled,
@@ -27,8 +29,7 @@ export default function SettingsDropdown({
 }) {
   let [referenceElement, setReferenceElement] = useState();
   let [popperElement, setPopperElement] = useState();
-  let { styles, attributes } = usePopper(referenceElement, popperElement);
-
+  let { styles, attributes } = usePopper(referenceElement, popperElement, { placement: 'top' });
 
 
   return (
@@ -77,7 +78,8 @@ export default function SettingsDropdown({
       </Transition>
       <Popover.Button
         ref={setReferenceElement}
-        className='inline-flex w-full justify-center rounded-md bg-opacity-20 px-4 py-2 text-sm font-medium text-black hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 outline-none'
+        disabled={disabled}
+        className={`${disabled ? 'opacity-20' : ''} inline-flex w-full justify-center rounded-md bg-opacity-20 px-4 py-2 text-sm font-medium text-black hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 outline-none`}
       >
         <SettingIcon />
       </Popover.Button>
