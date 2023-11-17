@@ -326,7 +326,6 @@ export const GoogleSttChat = () => {
     if (!startKeywordDetectedRef.current && typeof endKeywordDetectedRef.current === 'undefined') {
       const wake_words = stopUtteringKeywords?.split(',') || WAKE_WORDS.split(',');
       for (const keyword of wake_words) {
-        console.log({ text: sanitizeText(text), keyword: sanitizeText(keyword) })
         if (sanitizeText(text).includes(sanitizeText(keyword))) {
           stopUttering();
         }
