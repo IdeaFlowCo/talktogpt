@@ -9,6 +9,7 @@ interface GoogleSttControlsState {
   stopUtteringWords?: string;
   terminatorKeywords?: string;
   terminatorWaitTime?: number;
+  beConcise?: boolean;
 }
 
 export enum ControlsActions {
@@ -29,6 +30,7 @@ export const initialControlsState: GoogleSttControlsState = {
   stopUtteringWords: STOP_UTTERING_WORDS,
   terminatorKeywords: TERMINATOR_WORDS,
   terminatorWaitTime: TERMINATOR_WORD_TIMEOUT,
+  beConcise: true,
 };
 
 export function controlsReducer(state: GoogleSttControlsState, action: GoogleSttControlsAction) {
