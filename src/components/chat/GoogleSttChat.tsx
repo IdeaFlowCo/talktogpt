@@ -246,6 +246,7 @@ export const GoogleSttChat = () => {
     }
     setShowBlueBubbleChat(true);
     setInterim('');
+    setNoti(undefined);
     interimsRef.current = [];
     if (isWhisperEnabled) {
       startRecording().then(() => {
@@ -393,6 +394,11 @@ export const GoogleSttChat = () => {
     if (!transcribed.text) {
       showErrorMessage('Voice command not detected. Please speak again.');
       flagsDispatch({ type: FlagsActions.STOP_SENDING_CHAT });
+      setInterim('');
+      setShowBlueBubbleChat(false);
+      startKeywordDetectedRef.current = false;
+      transcript.blob = undefined;
+      flagsDispatch({ type: FlagsActions.STOP_UTTERING });
       return null;
     }
     return transcribed.text;
@@ -800,6 +806,7 @@ export const GoogleSttChat = () => {
       }
     }
 
+    // window.addEventListener('focus', () => {
     // if (isWhisperEnabled) {
     //   async function startWhisper() {
     //     await prepareUseWhisper();
@@ -812,6 +819,11 @@ export const GoogleSttChat = () => {
     //   }
     //   startWithoutWhisper();
     // }
+    // })
+
+    // window.addEventListener('blur', () => {
+    //   console.log("BYE BYE SOCKET")
+    // })
     window.addEventListener('message', handleStopUttering);
 
     return () => {
