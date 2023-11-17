@@ -10,6 +10,7 @@ export default function GoogleSTTPill({
   wakeKeywords,
   stopUtteringWords,
   terminatorKeywords,
+  beConcise,
   onChangeAutoStopTimeout,
   onChangeIsAutoStop,
   onChangeSpeakingRate,
@@ -19,7 +20,8 @@ export default function GoogleSTTPill({
   onChangeTerminatorWaitTime,
   onChangeWakeWord,
   onChangeStopUtteringWord,
-  onChangeTerminatorWord
+  onChangeTerminatorWord,
+  onChangeBeConcise,
 }) {
   return (
     <div className='flex h-10 min-w-[50%] flex-row items-center justify-center gap-4 self-center rounded-full bg-gray-300 sm:min-w-[25%]'>
@@ -42,6 +44,7 @@ export default function GoogleSTTPill({
         wakeKeywords={wakeKeywords}
         stopUtteringWords={stopUtteringWords}
         terminatorKeywords={terminatorKeywords}
+        beConcise={beConcise}
         onChangeAutoStopTimeout={onChangeAutoStopTimeout}
         onChangeIsAutoStop={onChangeIsAutoStop}
         onChangeIsWhisperEnabled={onChangeIsWhisperEnabled}
@@ -49,6 +52,7 @@ export default function GoogleSTTPill({
         onChangeWakeWord={onChangeWakeWord}
         onChangeStopUtteringWord={onChangeStopUtteringWord}
         onChangeTerminatorWord={onChangeTerminatorWord}
+        onChangeBeConcise={onChangeBeConcise}
       />
     </div>
   );

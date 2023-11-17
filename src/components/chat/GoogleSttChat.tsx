@@ -97,7 +97,8 @@ export const GoogleSttChat = () => {
     terminatorWaitTime,
     wakeKeywords,
     stopUtteringWords,
-    terminatorKeywords
+    terminatorKeywords,
+    beConcise
   }, controlsDispatch] = useReducer(controlsReducer, initialControlsState);
 
   const { recording, transcript, startRecording, stopRecording } = useWhisper({
@@ -671,7 +672,7 @@ export const GoogleSttChat = () => {
 
     try {
       const data: CreateMessage = {
-        content: `${text} ${BE_CONCISE}`,
+        content: `${text} ${beConcise ? BE_CONCISE : ''}`,
         role: 'user',
       };
 
@@ -954,6 +955,16 @@ export const GoogleSttChat = () => {
     })
   }
 
+  const onChangeBeConcise = (value: boolean) => {
+    userSettings.refetch().then(({ data }) => {
+      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, beConcise: value } })
+      updateSettings({ ...data[0], settings: { ...data[0].settings, beConcise: value } })
+    }).catch((error) => {
+      console.error(error)
+    })
+  }
+
+
   const defaultMessage: Message = {
     content: `Welcome to Flow, your voice assistant. To activate flow, turn on the microphone. Then when you want to ask Flow a question and say “${wakeKeywords.split(',')[0]}, write a poem about Doug Engelbart” or anything else you would like to ask. You can switch to always on mode which allows you to speak, slowly, and end an utterance by saying “${terminatorKeywords.split(',')[0]}”.`,
     role: 'assistant',
@@ -1000,6 +1011,7 @@ export const GoogleSttChat = () => {
         wakeKeywords={wakeKeywords}
         stopUtteringWords={stopUtteringWords}
         terminatorKeywords={terminatorKeywords}
+        beConcise={beConcise}
         onChangeAutoStopTimeout={onChangeAutoStopTimeout}
         onChangeIsAutoStop={onChangeIsAutoStop}
         onChangeSpeakingRate={onChangeSpeakingRate}
@@ -1009,6 +1021,7 @@ export const GoogleSttChat = () => {
         onChangeWakeWord={onChangeWakeWord}
         onChangeStopUtteringWord={onChangeStopUtteringWord}
         onChangeTerminatorWord={onChangeTerminatorWord}
+        onChangeBeConcise={onChangeBeConcise}
       />
       {noti ? (
         <Alert

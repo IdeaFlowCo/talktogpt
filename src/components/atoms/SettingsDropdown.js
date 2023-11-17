@@ -15,13 +15,15 @@ export default function SettingsDropdown({
   wakeKeywords,
   stopUtteringWords,
   terminatorKeywords,
+  beConcise,
   onChangeAutoStopTimeout,
   onChangeIsAutoStop,
   onChangeIsWhisperEnabled,
   onChangeTerminatorWaitTime,
   onChangeWakeWord,
   onChangeStopUtteringWord,
-  onChangeTerminatorWord
+  onChangeTerminatorWord,
+  onChangeBeConcise,
 }) {
   let [referenceElement, setReferenceElement] = useState();
   let [popperElement, setPopperElement] = useState();
@@ -58,7 +60,8 @@ export default function SettingsDropdown({
               </div>
             ) : null} */}
             <div className='flex flex-col p-4'>
-              <SwitchControl label='Enable Whisper' value={isWhisperEnabled} onChange={onChangeIsWhisperEnabled} />
+              <SwitchControl label='Enable audio post-process' value={isWhisperEnabled} onChange={onChangeIsWhisperEnabled} />
+              <SwitchControl label='Recibe shorter answers' value={beConcise} onChange={onChangeBeConcise} />
               <hr className='my-4' />
               <InputNumber label='Terminator timeout' value={terminatorWaitTime} onChange={onChangeTerminatorWaitTime} />
               <hr className='my-4' />
