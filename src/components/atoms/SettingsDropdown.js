@@ -62,7 +62,7 @@ export default function SettingsDropdown({
             ) : null} */}
             <div className='flex flex-col p-4'>
               <SwitchControl label='Enable audio post-process' value={isWhisperEnabled} onChange={onChangeIsWhisperEnabled} />
-              <SwitchControl label='Recibe shorter answers' value={beConcise} onChange={onChangeBeConcise} />
+              <SwitchControl label='Get shorter answers' value={beConcise} onChange={onChangeBeConcise} />
               <hr className='my-4' />
               <InputNumber label='Terminator timeout' value={terminatorWaitTime} onChange={onChangeTerminatorWaitTime} />
               <hr className='my-4' />
