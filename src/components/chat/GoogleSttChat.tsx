@@ -324,10 +324,13 @@ export const GoogleSttChat = () => {
 
   const stopUtteringIfKeywordDetected = (text: string, stopUtteringKeywords: string) => {
     if (!startKeywordDetectedRef.current && typeof endKeywordDetectedRef.current === 'undefined') {
-      const stopKeyword = extractStartKeyword(text, stopUtteringKeywords)
-      if (stopKeyword !== null) {
-        stopUttering();
+      const wake_words = stopUtteringKeywords?.split(',') || WAKE_WORDS.split(',');
+      for (const keyword of wake_words) {
+        if (sanitizeText(text).includes(sanitizeText(keyword))) {
+          stopUttering();
+        }
       }
+      return false;
     }
   }
 
