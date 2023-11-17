@@ -58,8 +58,7 @@ const MicButton = ({
         !isSpeaking &&
         !isListening && (
 
-          <>
-
+          <div className="relative">
             <Tooltip content="Tap on me to have a chat!" isOpen showArrow
               classNames={{
                 content: [
@@ -67,7 +66,7 @@ const MicButton = ({
                 ],
               }}
             >
-              <span className="relative flex h-3 w-3 top-4 left-10">
+              <span className="absolute flex h-3 w-3 left-10">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#96BE64] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-[#96BE64]"></span>
               </span>
@@ -83,11 +82,11 @@ const MicButton = ({
             >
               <MicIcon color='#4F46DC' />
             </button>
-          </>
+          </div>
 
         )
       }
-    </div >
+    </div>
   )
 }
 
