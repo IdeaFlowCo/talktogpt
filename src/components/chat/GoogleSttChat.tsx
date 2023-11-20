@@ -145,11 +145,6 @@ export const GoogleSttChat = () => {
     flagsDispatch({ type: FlagsActions.START_UTTERING });
     isUtteringRef.current = true;
     if (!isAndroid || (isAndroid && !globalThis.ReactNativeWebView)) {
-      if (!speechRef.current) {
-        speechRef.current = new SpeechSynthesisUtterance();
-        speechRef.current.addEventListener('start', onStartUttering);
-        speechRef.current.addEventListener('end', onStopUttering);
-      }
       speechRef.current.lang = 'en-US';
       speechRef.current.text = text;
       globalThis.speechSynthesis.speak(speechRef.current);
@@ -212,7 +207,6 @@ export const GoogleSttChat = () => {
     isReadyToSpeech.current = false;
     startUttering(storedMessagesRef.current[lastSpeechIndexRef.current]);
   }
-
 
 
   const forceStopRecording = async () => {
@@ -451,6 +445,16 @@ export const GoogleSttChat = () => {
     }
   };
 
+  const prepareSpeechUttering = () => {
+    if (!speechRef.current) {
+      speechRef.current = new SpeechSynthesisUtterance();
+      speechRef.current.addEventListener('start', onStartUttering);
+      speechRef.current.addEventListener('end', onStopUttering);
+      speechRef.current.text = '';
+      globalThis.speechSynthesis.speak(speechRef.current);
+    }
+  }
+
   const prepareSocket = async () => {
     socketRef.current = io(TALKTOGPT_SOCKET_ENDPOINT);
 
@@ -462,6 +466,7 @@ export const GoogleSttChat = () => {
 
     socketRef.current.on('disconnect', () => { });
   };
+
 
   const releaseHark = () => {
     // remove hark event listeners
@@ -571,6 +576,7 @@ export const GoogleSttChat = () => {
   };
 
   const startListening = async () => {
+    prepareSpeechUttering();
     flagsDispatch({ type: FlagsActions.START_LISTENING });
     if (isWhisperEnabled) {
       await prepareUseWhisper();
