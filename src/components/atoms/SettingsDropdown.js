@@ -6,7 +6,8 @@ import SwitchControl from './SwitchControl';
 import { SettingIcon } from 'assets/icons/SettingIcon';
 import InputText from './InputText';
 import { STOP_UTTERING_WORDS, TERMINATOR_WORDS, WAKE_WORDS } from 'components/chat/constants';
-import { set } from 'lodash';
+import { Tabs, Tab } from "@nextui-org/react";
+import { isMobile } from 'react-device-detect';
 
 export default function SettingsDropdown({
   disabled,
@@ -60,19 +61,38 @@ export default function SettingsDropdown({
                 </button>
               </div>
             ) : null} */}
-            <div className='flex flex-col p-4'>
-              <SwitchControl label='Enable audio post-process' value={isWhisperEnabled} onChange={onChangeIsWhisperEnabled} />
-              <SwitchControl label='Get shorter answers' value={beConcise} onChange={onChangeBeConcise} />
-              <hr className='my-4' />
-              <InputNumber label='Terminator timeout' value={terminatorWaitTime} onChange={onChangeTerminatorWaitTime} />
-              <hr className='my-4' />
-              <InputText label='Wake word' value={wakeKeywords} placeholder={`Default value: ${WAKE_WORDS}`} onChange={onChangeWakeWord} />
-              <InputText label='Stop uttering word' value={stopUtteringWords} placeholder={`Default value: ${STOP_UTTERING_WORDS}`} onChange={onChangeStopUtteringWord} />
-              <InputText label='Terminator word' value={terminatorKeywords} placeholder={`Default value: ${TERMINATOR_WORDS}`} onChange={onChangeTerminatorWord} />
-              <hr className='my-4' />
-              <SwitchControl label='Automatic respond' value={isAutoStop} onChange={onChangeIsAutoStop} />
-              <InputNumber label='Auto-stop timeout' value={autoStopTimeout} onChange={onChangeAutoStopTimeout} />
-            </div>
+            {isMobile ? (
+              <div className='flex flex-col p-4 min-h-[320px]'>
+                <Tabs aria-label="Settings">
+                  <Tab key="settings" title="Settings">
+                    <SwitchControl label='Enable audio post-process' value={isWhisperEnabled} onChange={onChangeIsWhisperEnabled} />
+                    <SwitchControl label='Get shorter answers' value={beConcise} onChange={onChangeBeConcise} />
+                    <SwitchControl label='Automatic respond' value={isAutoStop} onChange={onChangeIsAutoStop} />
+                    <InputNumber label='Auto-stop timeout' value={autoStopTimeout} onChange={onChangeAutoStopTimeout} />
+                  </Tab>
+                  <Tab key="keywords" title="Keywords">
+                    <InputText label='Wake word' value={wakeKeywords} placeholder={`Default value: ${WAKE_WORDS}`} onChange={onChangeWakeWord} />
+                    <InputText label='Stop uttering word' value={stopUtteringWords} placeholder={`Default value: ${STOP_UTTERING_WORDS}`} onChange={onChangeStopUtteringWord} />
+                    <InputText label='Terminator word' value={terminatorKeywords} placeholder={`Default value: ${TERMINATOR_WORDS}`} onChange={onChangeTerminatorWord} />
+                    <InputNumber label='Terminator timeout' value={terminatorWaitTime} onChange={onChangeTerminatorWaitTime} />
+                  </Tab>
+                </Tabs>
+              </div>
+            ) : (
+              <div className='flex flex-col p-4'>
+                <SwitchControl label='Enable audio post-process' value={isWhisperEnabled} onChange={onChangeIsWhisperEnabled} />
+                <SwitchControl label='Get shorter answers' value={beConcise} onChange={onChangeBeConcise} />
+                <hr className='my-4' />
+                <InputNumber label='Terminator timeout' value={terminatorWaitTime} onChange={onChangeTerminatorWaitTime} />
+                <hr className='my-4' />
+                <InputText label='Wake word' value={wakeKeywords} placeholder={`Default value: ${WAKE_WORDS}`} onChange={onChangeWakeWord} />
+                <InputText label='Stop uttering word' value={stopUtteringWords} placeholder={`Default value: ${STOP_UTTERING_WORDS}`} onChange={onChangeStopUtteringWord} />
+                <InputText label='Terminator word' value={terminatorKeywords} placeholder={`Default value: ${TERMINATOR_WORDS}`} onChange={onChangeTerminatorWord} />
+                <hr className='my-4' />
+                <SwitchControl label='Automatic respond' value={isAutoStop} onChange={onChangeIsAutoStop} />
+                <InputNumber label='Auto-stop timeout' value={autoStopTimeout} onChange={onChangeAutoStopTimeout} />
+              </div>
+            )}
           </div>
         </Popover.Panel>
       </Transition>
