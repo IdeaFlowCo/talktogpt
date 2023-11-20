@@ -576,8 +576,10 @@ export const GoogleSttChat = () => {
   };
 
   const startListening = async () => {
-    prepareSpeechUttering();
-    speechRef.current.text = '';
+    if (!isAndroid || (isAndroid && !globalThis.ReactNativeWebView)) {
+      prepareSpeechUttering();
+      speechRef.current.text = '';
+    }
     flagsDispatch({ type: FlagsActions.START_LISTENING });
     if (isWhisperEnabled) {
       await prepareUseWhisper();
