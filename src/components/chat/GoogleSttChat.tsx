@@ -4,7 +4,7 @@ import Alert from 'components/atoms/Alert';
 import GoogleSTTInput from 'components/atoms/GoogleSTTInput';
 import InterimHistory from 'components/atoms/InterimHistory';
 import type { Harker } from 'hark';
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react';
 import io, { type Socket } from 'socket.io-client';
 import { type VoiceCommand } from 'types/useWhisperTypes';
 import { useAuth } from 'util/auth';
@@ -145,11 +145,7 @@ export const GoogleSttChat = () => {
     flagsDispatch({ type: FlagsActions.START_UTTERING });
     isUtteringRef.current = true;
     if (!isAndroid || (isAndroid && !globalThis.ReactNativeWebView)) {
-      if (!speechRef.current) {
-        speechRef.current = new SpeechSynthesisUtterance();
-        speechRef.current.addEventListener('start', onStartUttering);
-        speechRef.current.addEventListener('end', onStopUttering);
-      }
+      prepareSpeechUttering();
       speechRef.current.lang = 'en-US';
       speechRef.current.text = text;
       globalThis.speechSynthesis.speak(speechRef.current);
@@ -214,9 +210,9 @@ export const GoogleSttChat = () => {
   }
 
 
-
   const forceStopRecording = async () => {
     if (isWhisperEnabled) {
+      flagsDispatch({ type: FlagsActions.START_LOADING });
       await stopRecording();
     } else {
       flagsDispatch({ type: FlagsActions.STOP_RECORDING });
@@ -450,6 +446,15 @@ export const GoogleSttChat = () => {
     }
   };
 
+  const prepareSpeechUttering = () => {
+    if (!speechRef.current) {
+      speechRef.current = new SpeechSynthesisUtterance();
+      speechRef.current.addEventListener('start', onStartUttering);
+      speechRef.current.addEventListener('end', onStopUttering);
+      globalThis.speechSynthesis.speak(speechRef.current);
+    }
+  }
+
   const prepareSocket = async () => {
     socketRef.current = io(TALKTOGPT_SOCKET_ENDPOINT);
 
@@ -461,6 +466,7 @@ export const GoogleSttChat = () => {
 
     socketRef.current.on('disconnect', () => { });
   };
+
 
   const releaseHark = () => {
     // remove hark event listeners
@@ -570,6 +576,8 @@ export const GoogleSttChat = () => {
   };
 
   const startListening = async () => {
+    prepareSpeechUttering();
+    speechRef.current.text = '';
     flagsDispatch({ type: FlagsActions.START_LISTENING });
     if (isWhisperEnabled) {
       await prepareUseWhisper();
@@ -658,7 +666,6 @@ export const GoogleSttChat = () => {
       );
     }
     endKeywordDetectedRef.current = undefined;
-    flagsDispatch({ type: FlagsActions.STOP_LOADING });
     flagsDispatch({ type: FlagsActions.STOP_UTTERING });
     isUtteringRef.current = false;
   };
@@ -880,12 +887,12 @@ export const GoogleSttChat = () => {
     }
   }, [speakingRate]);
 
-  useEffect(() => {
-    if (chatRef.current) {
+  useLayoutEffect(() => {
+    if (chatRef.current || showBlueBubbleChat) {
       // auto scroll when there is new message
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+      chatRef.current.scrollTop = chatRef.current.scrollHeight + 50;
     }
-  }, [messages, interim]);
+  }, [messages, showBlueBubbleChat]);
 
   const onChangeAutoStopTimeout = (value: number) => {
     userSettings.refetch().then(({ data }) => {
