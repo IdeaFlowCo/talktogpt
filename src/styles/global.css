@@ -104,3 +104,16 @@ input[type='number']::-webkit-outer-spin-button {
 .custom-number-input button:focus {
   outline: none !important;
 }
+
+.softpulse {
+  animation: softpulse 1.5s ease-in-out infinite;
+}
+
+@keyframes softpulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}

@@ -40,7 +40,7 @@ function ChatMessage({ message, sender, loading, finalMessage = '', wakeKeywords
           ? ' self-end bg-indigo-600 text-white'
           : ' bg-[#f4f7fb] text-gray-900'
         } 
-        ${loading ? 'animate-pulse' : ''}`}
+        ${loading ? 'softpulse' : ''}`}
     >
       {!loading ? (
         <div className='flex text-md max-w-md gap-2'>
