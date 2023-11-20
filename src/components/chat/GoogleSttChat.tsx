@@ -4,7 +4,7 @@ import Alert from 'components/atoms/Alert';
 import GoogleSTTInput from 'components/atoms/GoogleSTTInput';
 import InterimHistory from 'components/atoms/InterimHistory';
 import type { Harker } from 'hark';
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react';
 import io, { type Socket } from 'socket.io-client';
 import { type VoiceCommand } from 'types/useWhisperTypes';
 import { useAuth } from 'util/auth';
@@ -145,6 +145,7 @@ export const GoogleSttChat = () => {
     flagsDispatch({ type: FlagsActions.START_UTTERING });
     isUtteringRef.current = true;
     if (!isAndroid || (isAndroid && !globalThis.ReactNativeWebView)) {
+      prepareSpeechUttering();
       speechRef.current.lang = 'en-US';
       speechRef.current.text = text;
       globalThis.speechSynthesis.speak(speechRef.current);
@@ -450,7 +451,6 @@ export const GoogleSttChat = () => {
       speechRef.current = new SpeechSynthesisUtterance();
       speechRef.current.addEventListener('start', onStartUttering);
       speechRef.current.addEventListener('end', onStopUttering);
-      speechRef.current.text = '';
       globalThis.speechSynthesis.speak(speechRef.current);
     }
   }
@@ -577,6 +577,7 @@ export const GoogleSttChat = () => {
 
   const startListening = async () => {
     prepareSpeechUttering();
+    speechRef.current.text = '';
     flagsDispatch({ type: FlagsActions.START_LISTENING });
     if (isWhisperEnabled) {
       await prepareUseWhisper();
@@ -886,12 +887,12 @@ export const GoogleSttChat = () => {
     }
   }, [speakingRate]);
 
-  useEffect(() => {
-    if (chatRef.current) {
+  useLayoutEffect(() => {
+    if (chatRef.current || showBlueBubbleChat) {
       // auto scroll when there is new message
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+      chatRef.current.scrollTop = chatRef.current.scrollHeight + 50;
     }
-  }, [messages, interim]);
+  }, [messages, showBlueBubbleChat]);
 
   const onChangeAutoStopTimeout = (value: number) => {
     userSettings.refetch().then(({ data }) => {
