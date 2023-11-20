@@ -6,30 +6,167 @@ import SwitchControl from './SwitchControl';
 import { SettingIcon } from 'assets/icons/SettingIcon';
 import InputText from './InputText';
 import { STOP_UTTERING_WORDS, TERMINATOR_WORDS, WAKE_WORDS } from 'components/chat/constants';
-import { set } from 'lodash';
+import { updateSettings, useSettingsByUser } from 'util/db';
+import { useAuth } from 'util/auth';
+import { initialControlsState } from 'components/chat/reducers/controls';
+import { useMutation } from 'react-query';
+
 
 export default function SettingsDropdown({
   disabled,
-  autoStopTimeout,
-  isAutoStop,
-  isWhisperEnabled,
-  terminatorWaitTime,
-  wakeKeywords,
-  stopUtteringWords,
-  terminatorKeywords,
-  beConcise,
-  onChangeAutoStopTimeout,
-  onChangeIsAutoStop,
-  onChangeIsWhisperEnabled,
-  onChangeTerminatorWaitTime,
-  onChangeWakeWord,
-  onChangeStopUtteringWord,
-  onChangeTerminatorWord,
-  onChangeBeConcise,
 }) {
   let [referenceElement, setReferenceElement] = useState();
   let [popperElement, setPopperElement] = useState();
   let { styles, attributes } = usePopper(referenceElement, popperElement, { placement: 'top' });
+
+  const auth = useAuth();
+  const { data: userSettings, refetch } = useSettingsByUser(auth.user?.id);
+
+  const {
+    autoStopTimeout,
+    isAutoStop,
+    isWhisperEnabled,
+    terminatorWaitTime,
+    wakeKeywords,
+    stopUtteringWords,
+    terminatorKeywords,
+    beConcise
+  } = userSettings?.settings ? userSettings.settings : initialControlsState
+
+  const { mutateAsync, isLoading } = useMutation(updateSettings, {
+    onSuccess: () => {
+      refetch();
+    },
+  });
+
+
+  const onChangeAutoStopTimeout = async (value) => {
+    const newSettings = {
+      ...userSettings, settings: {
+        isAutoStop,
+        isWhisperEnabled,
+        terminatorWaitTime,
+        wakeKeywords,
+        stopUtteringWords,
+        terminatorKeywords,
+        beConcise,
+        autoStopTimeout: value
+      }
+    }
+    await mutateAsync(newSettings);
+  }
+
+  const onChangeIsAutoStop = async (value) => {
+    const newSettings = {
+      ...userSettings, settings: {
+        autoStopTimeout,
+        isWhisperEnabled,
+        terminatorWaitTime,
+        wakeKeywords,
+        stopUtteringWords,
+        terminatorKeywords,
+        beConcise,
+        isAutoStop: value
+      }
+    }
+    await mutateAsync(newSettings);
+  }
+
+  const onChangeIsWhisperEnabled = async (value) => {
+    const newSettings = {
+      ...userSettings, settings: {
+        autoStopTimeout,
+        isAutoStop,
+        terminatorWaitTime,
+        wakeKeywords,
+        stopUtteringWords,
+        terminatorKeywords,
+        beConcise,
+        isWhisperEnabled: value
+      }
+    }
+    await mutateAsync(newSettings);
+  }
+
+  const onChangeTerminatorWaitTime = async (value) => {
+    const newSettings = {
+      ...userSettings, settings: {
+        autoStopTimeout,
+        isAutoStop,
+        isWhisperEnabled,
+        wakeKeywords,
+        stopUtteringWords,
+        terminatorKeywords,
+        beConcise,
+        terminatorWaitTime: value
+      }
+    }
+    await mutateAsync(newSettings);
+  }
+
+  const onChangeWakeWord = async (value) => {
+    const newSettings = {
+      ...userSettings, settings: {
+        autoStopTimeout,
+        isAutoStop,
+        isWhisperEnabled,
+        terminatorWaitTime,
+        stopUtteringWords,
+        terminatorKeywords,
+        beConcise,
+        wakeKeywords: value
+      }
+    }
+    await mutateAsync(newSettings);
+  }
+
+  const onChangeStopUtteringWord = async (value) => {
+    const newSettings = {
+      ...userSettings, settings: {
+        autoStopTimeout,
+        isAutoStop,
+        isWhisperEnabled,
+        terminatorWaitTime,
+        wakeKeywords,
+        terminatorKeywords,
+        beConcise,
+        stopUtteringWords: value
+      }
+    }
+    await mutateAsync(newSettings);
+  }
+
+  const onChangeTerminatorWord = async (value) => {
+    const newSettings = {
+      ...userSettings, settings: {
+        autoStopTimeout,
+        isAutoStop,
+        isWhisperEnabled,
+        terminatorWaitTime,
+        wakeKeywords,
+        stopUtteringWords,
+        beConcise,
+        terminatorKeywords: value
+      }
+    }
+    await mutateAsync(newSettings);
+  }
+
+  const onChangeBeConcise = async (value) => {
+    const newSettings = {
+      ...userSettings, settings: {
+        autoStopTimeout,
+        isAutoStop,
+        isWhisperEnabled,
+        terminatorWaitTime,
+        wakeKeywords,
+        stopUtteringWords,
+        terminatorKeywords,
+        beConcise: value
+      }
+    }
+    await mutateAsync(newSettings);
+  }
 
 
   return (
@@ -78,8 +215,8 @@ export default function SettingsDropdown({
       </Transition>
       <Popover.Button
         ref={setReferenceElement}
-        disabled={disabled}
-        className={`${disabled ? 'opacity-20' : ''} inline-flex w-full justify-center rounded-md bg-opacity-20 px-4 py-2 text-sm font-medium text-black hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 outline-none`}
+        disabled={disabled || isLoading}
+        className={`${disabled || isLoading ? 'opacity-20' : ''} inline-flex w-full justify-center rounded-md bg-opacity-20 px-4 py-2 text-sm font-medium text-black hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 outline-none`}
       >
         <SettingIcon />
       </Popover.Button>

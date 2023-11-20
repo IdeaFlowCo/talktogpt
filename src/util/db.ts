@@ -1,7 +1,6 @@
 import {
   useQuery,
   QueryClient,
-  QueryClientProvider as QueryClientProviderBase,
 } from 'react-query';
 import supabase from './supabase';
 import { GeneralEmailTemplateProps } from 'types/emailTypes';
@@ -1012,33 +1011,42 @@ export async function deleteMessage(id) {
 /* Example query functions (modify to your needs) */
 
 // Fetch settings by user
-export function useSettingsByUser() {
+export function useSettingsByUser(userId: string) {
   return useQuery(
-    ["settings"],
-    () =>
-      supabase
+    ["settings", { userId }],
+    async () =>
+      await supabase
         .from("settings")
         .select('*')
+        .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .then(handle)
+        .single()
+        .then(handle),
+        { enabled: !!userId }
   );
 }
 
 // Create new settings
 export async function createSettings(data) {
-  const response = await supabase.from("settings").insert([data]).then(handle);
+  const response = await supabase
+    .from("settings")
+    .insert(data)
+    .then(handle);
+  await client.invalidateQueries(["settings", { userId: data.user_id }]);
   return response;
 }
 
 // Update settings
 export async function updateSettings(data) {
+  console.log('data', data);
   const response = await supabase
     .from("settings")
     .update(data)
     .eq("user_id", data.user_id)
+    .single()
     .then(handle);
   // Invalidate and refetch queries that could have old data
-  await client.invalidateQueries(["settings"]);
+  await client.invalidateQueries(["settings", { userId: data.user_id }]);
   return response;
 }
 
