@@ -217,6 +217,7 @@ export const GoogleSttChat = () => {
 
   const forceStopRecording = async () => {
     if (isWhisperEnabled) {
+      flagsDispatch({ type: FlagsActions.START_LOADING });
       await stopRecording();
     } else {
       flagsDispatch({ type: FlagsActions.STOP_RECORDING });
@@ -658,7 +659,6 @@ export const GoogleSttChat = () => {
       );
     }
     endKeywordDetectedRef.current = undefined;
-    flagsDispatch({ type: FlagsActions.STOP_LOADING });
     flagsDispatch({ type: FlagsActions.STOP_UTTERING });
     isUtteringRef.current = false;
   };
