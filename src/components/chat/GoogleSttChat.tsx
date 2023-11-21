@@ -4,7 +4,7 @@ import Alert from 'components/atoms/Alert';
 import GoogleSTTInput from 'components/atoms/GoogleSTTInput';
 import InterimHistory from 'components/atoms/InterimHistory';
 import type { Harker } from 'hark';
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react';
 import io, { type Socket } from 'socket.io-client';
 import { type VoiceCommand } from 'types/useWhisperTypes';
 import { useAuth } from 'util/auth';
@@ -129,15 +129,6 @@ export const GoogleSttChat = () => {
     },
   });
 
-  const prepareSpeechUttering = useCallback(() => {
-    if (!speechRef.current) {
-      speechRef.current = new SpeechSynthesisUtterance();
-    }
-    speechRef.current.rate = speakingRate;
-    speechRef.current.addEventListener('start', onStartUttering);
-    speechRef.current.addEventListener('end', onStopUttering);
-  }, [speakingRate]);
-
   const prepareUseWhisper = async () => {
     if (!isWhisperPrepared) {
       /**
@@ -173,6 +164,7 @@ export const GoogleSttChat = () => {
     flagsDispatch({ type: FlagsActions.START_UTTERING });
     isUtteringRef.current = true;
     if (!isAndroid || (isAndroid && !globalThis.ReactNativeWebView)) {
+      prepareSpeechUttering();
       speechRef.current.lang = 'en-US';
       speechRef.current.text = text;
       globalThis.speechSynthesis.speak(speechRef.current);
@@ -237,9 +229,9 @@ export const GoogleSttChat = () => {
   }
 
 
-
   const forceStopRecording = async () => {
     if (isWhisperEnabled) {
+      flagsDispatch({ type: FlagsActions.START_LOADING });
       await stopRecording();
     } else {
       flagsDispatch({ type: FlagsActions.STOP_RECORDING });
@@ -406,15 +398,21 @@ export const GoogleSttChat = () => {
   };
 
   const handleTranscriptionResults = (transcribed: {
-    error?: Error;
-    text: string;
+    status: string;
+    message: string;
   }): string | null => {
-    if (transcribed.error) {
+    if (transcribed.status === 'error') {
       console.warn('24MB file size limit reached!');
-      showErrorMessage('24MB limit reached!');
+      showErrorMessage(transcribed.message);
+      flagsDispatch({ type: FlagsActions.STOP_SENDING_CHAT });
+      setInterim('');
+      setShowBlueBubbleChat(false);
+      startKeywordDetectedRef.current = false;
+      transcript.blob = undefined;
+      flagsDispatch({ type: FlagsActions.STOP_UTTERING });
       return null;
     }
-    if (!transcribed.text) {
+    if (transcribed.status === 'success' && transcribed.message === '') {
       showErrorMessage('Voice command not detected. Please speak again.');
       flagsDispatch({ type: FlagsActions.STOP_SENDING_CHAT });
       setInterim('');
@@ -424,23 +422,23 @@ export const GoogleSttChat = () => {
       flagsDispatch({ type: FlagsActions.STOP_UTTERING });
       return null;
     }
-    return transcribed.text;
+    return transcribed.message;
   };
 
   const transcribeAudio = async (
     blob: Blob
   ): Promise<{
-    error?: Error;
-    text: string;
+    status: string;
+    message: string;
   }> => {
     const base64 = await blobToBase64(blob);
     if (!base64) {
-      return { error: new Error('Failed to read blob data.'), text: '' };
+      return { status: 'error', message: 'Failed to read blob data.' };
     }
 
     // Transcribe the audio
-    const text = await whisperTranscript(base64);
-    return { text };
+    const response = await whisperTranscript(base64);
+    return response;
   };
 
   const onTranscribe = async () => {
@@ -472,6 +470,15 @@ export const GoogleSttChat = () => {
     }
   };
 
+  const prepareSpeechUttering = () => {
+    if (!speechRef.current) {
+      speechRef.current = new SpeechSynthesisUtterance();
+      speechRef.current.addEventListener('start', onStartUttering);
+      speechRef.current.addEventListener('end', onStopUttering);
+      globalThis.speechSynthesis.speak(speechRef.current);
+    }
+  }
+
   const prepareSocket = async () => {
     socketRef.current = io(TALKTOGPT_SOCKET_ENDPOINT);
 
@@ -483,6 +490,7 @@ export const GoogleSttChat = () => {
 
     socketRef.current.on('disconnect', () => { });
   };
+
 
   const releaseHark = () => {
     // remove hark event listeners
@@ -589,6 +597,10 @@ export const GoogleSttChat = () => {
   };
 
   const startListening = async () => {
+    if (!isAndroid || (isAndroid && !globalThis.ReactNativeWebView)) {
+      prepareSpeechUttering();
+      speechRef.current.text = '';
+    }
     flagsDispatch({ type: FlagsActions.START_LISTENING });
     prepareSpeechUttering();
     if (isWhisperEnabled) {
@@ -678,7 +690,6 @@ export const GoogleSttChat = () => {
       );
     }
     endKeywordDetectedRef.current = undefined;
-    flagsDispatch({ type: FlagsActions.STOP_LOADING });
     flagsDispatch({ type: FlagsActions.STOP_UTTERING });
     isUtteringRef.current = false;
   };
@@ -875,6 +886,13 @@ export const GoogleSttChat = () => {
       stopAutoStopTimeout();
     }
   }, [isAutoStop, isRecording, recording, isFinalData]);
+
+  useEffect(() => {
+    if (speechRef.current) {
+      // change utterance speaking rate
+      speechRef.current.rate = speakingRate;
+    }
+  }, [speakingRate]);
 
   useEffect(() => {
     if (chatRef.current) {
