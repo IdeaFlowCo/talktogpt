@@ -14,7 +14,7 @@ export default function SpeakingRateDropdown({
   const { data: userSettings, refetch } = useSettingsByUser(auth.user?.id,);
 
   const {
-    speakingRate,
+    speakingRate = 1,
   } = userSettings?.settings ? userSettings.settings : initialControlsState
 
   const { mutateAsync, isLoading: isLoadingUpdate } = useMutation(updateSettings, {
