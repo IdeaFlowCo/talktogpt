@@ -291,11 +291,11 @@ export const GoogleSttChat = () => {
   };
 
   const isStillSpeakingAfterTerminator = (lastWord: string, terminatorKeywords: string) => {
+    if (lastWord.length === 0) return false;
     const endWords = terminatorKeywords ?? TERMINATOR_WORDS;
     const matchWord = endWords.split(',').find((word) => {
       return lastWord.toLocaleLowerCase().includes(word.toLocaleLowerCase());
     });
-
     return typeof matchWord === 'undefined';
   }
 
@@ -331,26 +331,44 @@ export const GoogleSttChat = () => {
     }
   }
 
-  const sendRequestIfTerminatorKeywordDetected = (speech: string, speechHistory: string[], terminatorKeywords: string) => {
+  const stopEmptyRequest = async () => {
+    setShowBlueBubbleChat(false);
+    setInterim('');
+    startKeywordDetectedRef.current = false;
+    if (isWhisperEnabled) {
+      await stopRecording();
+    } else {
+      flagsDispatch({ type: FlagsActions.STOP_RECORDING });
+    }
+  }
+
+  const sendRequestIfTerminatorKeywordDetected = () => {
+
     if (
-      detectEndKeyword(speech, terminatorKeywords) &&
+      detectEndKeyword(interimRef.current, terminatorwordsRef.current) &&
       !endKeywordDetectedRef.current &&
-      speechHistory.length > 0
+      interimsRef.current.length > 0
     ) {
       const timeoutId = setTimeout(() => {
-        const lastWord = speechHistory[speechHistory.length - 1].split(' ');
-        if (!isStillSpeakingAfterTerminator(lastWord[lastWord.length - 1], terminatorKeywords)) {
-          endKeywordDetectedRef.current = true;
-          if (typeof startKeywordDetectedRef.current !== 'undefined' &&
-            !startKeywordDetectedRef.current) {
-            stopUttering();
-          } else {
-            stopByDetectEndKeyword();
-          }
-        } else {
+        const lastWord = sanitizeText(interimRef.current).split(' ');
+        if (isStillSpeakingAfterTerminator(lastWord[lastWord.length - 1], terminatorwordsRef.current)) {
           clearTimeout(timeoutId);
+        } else {
+          // Hay contenido en OpenaiRequest??
+          const finalRequest = removeTerminatorKeyword(removeInitialKeyword(sanitizeText(interimsRef.current.join(' ')), wakewordsRef.current), terminatorwordsRef.current)
+          if (finalRequest.length === 0) {
+            stopEmptyRequest();
+          } else {
+            endKeywordDetectedRef.current = true;
+            if (typeof startKeywordDetectedRef.current !== 'undefined' &&
+              !startKeywordDetectedRef.current) {
+              stopUttering();
+            } else {
+              stopByDetectEndKeyword();
+            }
+          }
         }
-      }, terminatorWaitTime * 1000);
+      }, (terminatorWaitTime || TERMINATOR_WORD_TIMEOUT) * 1000);
     }
   }
 
@@ -383,10 +401,12 @@ export const GoogleSttChat = () => {
       interimRef.current += ` ${data.text}`;
       setInterim(data.text);
 
-      if (data.isFinal) {
+      if (data.isFinal && !isUttering) {
         interimsRef.current.push(data.text);
-        interimRef.current = '';
-        setOpenaiRequest((prev) => `${prev} ${data.text}`);
+        // interimRef.current = '';
+        setOpenaiRequest((prev) => {
+          return `${prev} ${data.text}`;
+        });
         flagsDispatch({ type: FlagsActions.FINAL_DATA_RECEIVED });
       } else {
         flagsDispatch({ type: FlagsActions.NOT_FINAL_DATA_RECEIVED });
@@ -401,7 +421,7 @@ export const GoogleSttChat = () => {
 
       // Detect end keyword and stop recording if detected in case that was the last word
       if (!isUtteringRef.current) {
-        sendRequestIfTerminatorKeywordDetected(interimRef.current, interimsRef.current, terminatorwordsRef.current)
+        sendRequestIfTerminatorKeywordDetected()
       }
 
       const reversedInterims = interimsRef.current[interimsRef.current.length - 1] ?? '';
@@ -469,6 +489,7 @@ export const GoogleSttChat = () => {
     }
 
     await submitTranscript(text);
+    setOpenaiRequest('');
     flagsDispatch({ type: FlagsActions.STOP_SENDING_CHAT });
   };
 
@@ -617,7 +638,6 @@ export const GoogleSttChat = () => {
       speechRef.current.text = '';
     }
     flagsDispatch({ type: FlagsActions.START_LISTENING });
-    prepareSpeechUttering();
     if (isWhisperEnabled) {
       await prepareUseWhisper();
     }
@@ -876,6 +896,7 @@ export const GoogleSttChat = () => {
    */
   useEffect(() => {
     if (isRequestReadyForTranscription()) {
+      interimRef.current = '';
       flagsDispatch({ type: FlagsActions.STOP_TRANSCRIPTION });
       const handleOnTranscribe = async () => {
         await onTranscribe();
@@ -916,7 +937,11 @@ export const GoogleSttChat = () => {
     }
   }, [messages, interim]);
 
-
+  useEffect(() => {
+    if (!showBlueBubbleChat) {
+      setOpenaiRequest('');
+    }
+  }, [showBlueBubbleChat])
 
 
   const defaultMessage: Message = {
