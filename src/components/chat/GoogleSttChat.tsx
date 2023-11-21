@@ -82,6 +82,7 @@ export const GoogleSttChat = () => {
   const wakewordsRef = useRef<string>(WAKE_WORDS);
   const terminatorwordsRef = useRef<string>(TERMINATOR_WORDS);
   const stopUtteringWordsRef = useRef<string>(STOP_UTTERING_WORDS);
+  const speakingRateRef = useRef<number>(1);
 
   const [firstMessage, setFirstMessage] = useState<string | null>(null);
   const [interim, setInterim] = useState<string>('');
@@ -182,6 +183,7 @@ export const GoogleSttChat = () => {
       prepareSpeechUttering();
       speechRef.current.lang = 'en-US';
       speechRef.current.text = text;
+      speechRef.current.rate = speakingRateRef.current;
       globalThis.speechSynthesis.speak(speechRef.current);
     } else {
       globalThis.ReactNativeWebView.postMessage(
@@ -924,9 +926,8 @@ export const GoogleSttChat = () => {
   }, [isAutoStop, isRecording, recording, isFinalData]);
 
   useEffect(() => {
-    if (speechRef.current) {
-      // change utterance speaking rate
-      speechRef.current.rate = speakingRate;
+    if (speakingRate) {
+      speakingRateRef.current = speakingRate;
     }
   }, [speakingRate]);
 
