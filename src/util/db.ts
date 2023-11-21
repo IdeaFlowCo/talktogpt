@@ -11,7 +11,13 @@ import {
   FollowupSubmissionType,
 } from 'types/supabaseDbTypes';
 // React Query client
-export const client = new QueryClient();
+export const client = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 0,
+    },
+  },
+});
 
 /**** USERS ****/
 
