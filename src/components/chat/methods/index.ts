@@ -127,7 +127,7 @@ export const blobToBase64 = (blob: Blob): Promise<string | null> => {
   });
 };
 
-export const whisperTranscript = async (base64: string): Promise<string> => {
+export const whisperTranscript = async (base64: string): Promise<{status: string, message: string}> => {
   console.log('WHISPER');
   try {
     const body = {
@@ -141,10 +141,16 @@ export const whisperTranscript = async (base64: string): Promise<string> => {
       headers,
       maxBodyLength: 25 * 1024 * 1024,
     });
-    return response?.data?.text || '';
+    return {
+      status: 'success',
+      message: response?.data?.text || '',
+    }
   } catch (error) {
     console.warn('whisperTranscript', { error });
-    return '';
+    return {
+      status: 'error',
+      message: `${error?.message}: ${error?.response?.data}`  || '',
+    }
   }
 };
 
