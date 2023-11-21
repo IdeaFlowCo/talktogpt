@@ -1052,7 +1052,13 @@ export async function updateSettings(data) {
   if (settings) {
     const response = await supabase
       .from("settings")
-      .update(data)
+      .update({
+        ...settings,
+        settings: {
+          ...settings.settings,
+          ...data.settings
+        }
+      })
       .eq("user_id", data.user_id)
       .single()
       .then(handle);

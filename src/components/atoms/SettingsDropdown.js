@@ -62,13 +62,6 @@ export default function SettingsDropdown({
       ...userSettings,
       user_id: auth.user?.id,
       settings: {
-        isAutoStop: valueAutoStop,
-        isWhisperEnabled: valueIsWhisperEnabled,
-        terminatorWaitTime,
-        wakeKeywords,
-        stopUtteringWords,
-        terminatorKeywords,
-        beConcise: valueBeConcise,
         autoStopTimeout: value
       }
     }
@@ -81,13 +74,6 @@ export default function SettingsDropdown({
       ...userSettings,
       user_id: auth.user?.id,
       settings: {
-        autoStopTimeout,
-        isWhisperEnabled,
-        terminatorWaitTime,
-        wakeKeywords,
-        stopUtteringWords,
-        terminatorKeywords,
-        beConcise,
         isAutoStop: value
       }
     }
@@ -100,13 +86,6 @@ export default function SettingsDropdown({
       ...userSettings,
       user_id: auth.user?.id,
       settings: {
-        autoStopTimeout,
-        isAutoStop,
-        terminatorWaitTime,
-        wakeKeywords,
-        stopUtteringWords,
-        terminatorKeywords,
-        beConcise,
         isWhisperEnabled: value
       }
     }
@@ -118,13 +97,6 @@ export default function SettingsDropdown({
       ...userSettings,
       user_id: auth.user?.id,
       settings: {
-        autoStopTimeout,
-        isAutoStop,
-        isWhisperEnabled,
-        wakeKeywords,
-        stopUtteringWords,
-        terminatorKeywords,
-        beConcise,
         terminatorWaitTime: value
       }
     }
@@ -136,13 +108,6 @@ export default function SettingsDropdown({
       ...userSettings,
       user_id: auth.user?.id,
       settings: {
-        autoStopTimeout,
-        isAutoStop,
-        isWhisperEnabled,
-        terminatorWaitTime,
-        stopUtteringWords,
-        terminatorKeywords,
-        beConcise,
         wakeKeywords: value
       }
     }
@@ -154,13 +119,6 @@ export default function SettingsDropdown({
       ...userSettings,
       user_id: auth.user?.id,
       settings: {
-        autoStopTimeout,
-        isAutoStop,
-        isWhisperEnabled,
-        terminatorWaitTime,
-        wakeKeywords,
-        terminatorKeywords,
-        beConcise,
         stopUtteringWords: value
       }
     }
@@ -172,13 +130,6 @@ export default function SettingsDropdown({
       ...userSettings,
       user_id: auth.user?.id,
       settings: {
-        autoStopTimeout,
-        isAutoStop,
-        isWhisperEnabled,
-        terminatorWaitTime,
-        wakeKeywords,
-        stopUtteringWords,
-        beConcise,
         terminatorKeywords: value
       }
     }
@@ -191,13 +142,6 @@ export default function SettingsDropdown({
       ...userSettings,
       user_id: auth.user?.id,
       settings: {
-        autoStopTimeout,
-        isAutoStop,
-        isWhisperEnabled,
-        terminatorWaitTime,
-        wakeKeywords,
-        stopUtteringWords,
-        terminatorKeywords,
         beConcise: value
       }
     }
