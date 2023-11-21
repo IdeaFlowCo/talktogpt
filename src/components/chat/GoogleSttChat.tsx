@@ -79,6 +79,9 @@ export const GoogleSttChat = () => {
   const lastSpeechIndexRef = useRef<number>(0);
   const isReadyToSpeech = useRef<boolean>(true);
   const isUtteringRef = useRef<boolean>(false);
+  const wakewordsRef = useRef<string>(WAKE_WORDS);
+  const terminatorwordsRef = useRef<string>(TERMINATOR_WORDS);
+  const stopUtteringWordsRef = useRef<string>(STOP_UTTERING_WORDS);
 
   const [firstMessage, setFirstMessage] = useState<string | null>(null);
   const [interim, setInterim] = useState<string>('');
@@ -113,6 +116,18 @@ export const GoogleSttChat = () => {
     terminatorKeywords = TERMINATOR_WORDS,
     beConcise = true,
   } = userSettings?.settings ? userSettings.settings : initialControlsState
+
+  useEffect(() => {
+    if (typeof wakeKeywords !== "undefined" && wakeKeywords !== null) {
+      wakewordsRef.current = wakeKeywords;
+    }
+    if (typeof terminatorKeywords !== "undefined" && terminatorKeywords !== null) {
+      terminatorwordsRef.current = terminatorKeywords;
+    }
+    if (typeof stopUtteringWords !== "undefined" && stopUtteringWords !== null) {
+      stopUtteringWordsRef.current = stopUtteringWords;
+    }
+  }, [wakeKeywords, terminatorKeywords, stopUtteringWords])
 
 
   const { recording, transcript, startRecording, stopRecording } = useWhisper({
@@ -236,8 +251,8 @@ export const GoogleSttChat = () => {
     } else {
       flagsDispatch({ type: FlagsActions.STOP_RECORDING });
     }
-    const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(interimsRef.current.join(' ')), wakeKeywords)
-    const requestWithoutKeywords = removeTerminatorKeyword(requestWithoutInitialKeywords, terminatorKeywords)
+    const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(interimsRef.current.join(' ')), wakewordsRef.current)
+    const requestWithoutKeywords = removeTerminatorKeyword(requestWithoutInitialKeywords, terminatorwordsRef.current)
     setOpenaiRequest(requestWithoutKeywords)
 
     startKeywordDetectedRef.current = false;
@@ -292,8 +307,8 @@ export const GoogleSttChat = () => {
       })
     }
     setOpenaiRequest(prev => {
-      const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(`${prev} ${interim}`), wakeKeywords)
-      const requestWithoutKeywords = removeTerminatorKeyword(requestWithoutInitialKeywords, terminatorKeywords)
+      const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(`${prev} ${interim}`), wakewordsRef.current)
+      const requestWithoutKeywords = removeTerminatorKeyword(requestWithoutInitialKeywords, terminatorwordsRef.current)
       return requestWithoutKeywords
     })
     endKeywordDetectedRef.current = false;
@@ -379,14 +394,14 @@ export const GoogleSttChat = () => {
 
       // Detect starting keyword
       if (!isUtteringRef.current) {
-        detectStartingKeyword(interimRef.current, userSettings?.settings?.wakeKeywords ?? wakeKeywords)
+        detectStartingKeyword(interimRef.current, wakewordsRef.current)
       }
       // Stop the uttering if the user says the keyword to stop
-      stopUtteringIfKeywordDetected(interimRef.current, userSettings?.settings?.stopUtteringWords ?? stopUtteringWords)
+      stopUtteringIfKeywordDetected(interimRef.current, stopUtteringWordsRef.current)
 
       // Detect end keyword and stop recording if detected in case that was the last word
       if (!isUtteringRef.current) {
-        sendRequestIfTerminatorKeywordDetected(interimRef.current, interimsRef.current, userSettings?.settings?.terminatorKeywords ?? terminatorKeywords)
+        sendRequestIfTerminatorKeywordDetected(interimRef.current, interimsRef.current, terminatorwordsRef.current)
       }
 
       const reversedInterims = interimsRef.current[interimsRef.current.length - 1] ?? '';
@@ -447,10 +462,10 @@ export const GoogleSttChat = () => {
       const transcribed = await transcribeAudio(transcript.blob);
       const transcriptionText = handleTranscriptionResults(transcribed);
       if (!transcriptionText) return;
-      text = removeTerminatorKeyword(transcriptionText, terminatorKeywords);
+      text = removeTerminatorKeyword(transcriptionText, terminatorwordsRef.current);
     } else {
       if (!openaiRequest) return;
-      text = removeTerminatorKeyword(openaiRequest, terminatorKeywords);
+      text = removeTerminatorKeyword(openaiRequest, terminatorwordsRef.current);
     }
 
     await submitTranscript(text);
@@ -905,7 +920,7 @@ export const GoogleSttChat = () => {
 
 
   const defaultMessage: Message = {
-    content: `Welcome to Flow, your voice assistant. To activate flow, turn on the microphone. Then when you want to ask Flow a question and say “${wakeKeywords.split(',')[0]}, write a poem about Doug Engelbart” or anything else you would like to ask. You can switch to always on mode which allows you to speak, slowly, and end an utterance by saying “${terminatorKeywords.split(',')[0]}”.`,
+    content: `Welcome to Flow, your voice assistant. To activate flow, turn on the microphone. Then when you want to ask Flow a question and say “${wakewordsRef.current.split(',')[0]}, write a poem about Doug Engelbart” or anything else you would like to ask. You can switch to always on mode which allows you to speak, slowly, and end an utterance by saying “${terminatorwordsRef.current.split(',')[0]}”.`,
     role: 'assistant',
     id: 'initial-message',
   };
@@ -935,7 +950,7 @@ export const GoogleSttChat = () => {
               sender='user'
               loading={true}
               finalMessage={openaiRequest}
-              wakeKeywords={wakeKeywords}
+              wakeKeywords={wakewordsRef.current}
             />
           ) : null}
         </div>
