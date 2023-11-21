@@ -380,15 +380,21 @@ export const GoogleSttChat = () => {
   };
 
   const handleTranscriptionResults = (transcribed: {
-    error?: Error;
-    text: string;
+    status: string;
+    message: string;
   }): string | null => {
-    if (transcribed.error) {
+    if (transcribed.status === 'error') {
       console.warn('24MB file size limit reached!');
-      showErrorMessage('24MB limit reached!');
+      showErrorMessage(transcribed.message);
+      flagsDispatch({ type: FlagsActions.STOP_SENDING_CHAT });
+      setInterim('');
+      setShowBlueBubbleChat(false);
+      startKeywordDetectedRef.current = false;
+      transcript.blob = undefined;
+      flagsDispatch({ type: FlagsActions.STOP_UTTERING });
       return null;
     }
-    if (!transcribed.text) {
+    if (transcribed.status === 'success' && transcribed.message === '') {
       showErrorMessage('Voice command not detected. Please speak again.');
       flagsDispatch({ type: FlagsActions.STOP_SENDING_CHAT });
       setInterim('');
@@ -398,23 +404,23 @@ export const GoogleSttChat = () => {
       flagsDispatch({ type: FlagsActions.STOP_UTTERING });
       return null;
     }
-    return transcribed.text;
+    return transcribed.message;
   };
 
   const transcribeAudio = async (
     blob: Blob
   ): Promise<{
-    error?: Error;
-    text: string;
+    status: string;
+    message: string;
   }> => {
     const base64 = await blobToBase64(blob);
     if (!base64) {
-      return { error: new Error('Failed to read blob data.'), text: '' };
+      return { status: 'error', message: 'Failed to read blob data.' };
     }
 
     // Transcribe the audio
-    const text = await whisperTranscript(base64);
-    return { text };
+    const response = await whisperTranscript(base64);
+    return response;
   };
 
   const onTranscribe = async () => {
