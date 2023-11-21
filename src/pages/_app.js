@@ -9,6 +9,7 @@ import { QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
 import Navbar from 'components/Navbar';
 import Footer from 'components/Footer';
+import { ReactQueryDevtools } from 'react-query/devtools'
 
 function MyApp({ Component, pageProps }) {
   return (
@@ -26,6 +27,7 @@ function MyApp({ Component, pageProps }) {
           <Footer />
         </>
       </AuthProvider>
+      {/* <ReactQueryDevtools initialIsOpen={false} /> */}
     </QueryClientProvider>
 
   );

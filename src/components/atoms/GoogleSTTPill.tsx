@@ -2,33 +2,14 @@ import SettingsDropdown from './SettingsDropdown';
 import SpeakingRateDropdown from './SpeakingRateDropdown';
 
 export default function GoogleSTTPill({
-  autoStopTimeout,
-  isAutoStop,
   isUttering,
-  speakingRate = 1,
-  terminatorWaitTime = 1,
-  wakeKeywords,
-  stopUtteringWords,
-  terminatorKeywords,
-  beConcise,
-  onChangeAutoStopTimeout,
-  onChangeIsAutoStop,
-  onChangeSpeakingRate,
   onToggleUttering,
-  isWhisperEnabled,
-  onChangeIsWhisperEnabled,
-  onChangeTerminatorWaitTime,
-  onChangeWakeWord,
-  onChangeStopUtteringWord,
-  onChangeTerminatorWord,
-  onChangeBeConcise,
 }) {
+
   return (
     <div className='flex h-10 min-w-[50%] flex-row items-center justify-center gap-4 self-center rounded-full bg-gray-300 sm:min-w-[25%]'>
       <SpeakingRateDropdown
         disabled={isUttering}
-        speakingRate={speakingRate}
-        onChangeSpeakingRate={onChangeSpeakingRate}
       />
       <button onClick={onToggleUttering}>
         {isUttering ? (
@@ -39,22 +20,6 @@ export default function GoogleSTTPill({
       </button>
       <SettingsDropdown
         disabled={isUttering}
-        autoStopTimeout={autoStopTimeout}
-        isAutoStop={isAutoStop}
-        isWhisperEnabled={isWhisperEnabled}
-        terminatorWaitTime={terminatorWaitTime}
-        wakeKeywords={wakeKeywords}
-        stopUtteringWords={stopUtteringWords}
-        terminatorKeywords={terminatorKeywords}
-        beConcise={beConcise}
-        onChangeAutoStopTimeout={onChangeAutoStopTimeout}
-        onChangeIsAutoStop={onChangeIsAutoStop}
-        onChangeIsWhisperEnabled={onChangeIsWhisperEnabled}
-        onChangeTerminatorWaitTime={onChangeTerminatorWaitTime}
-        onChangeWakeWord={onChangeWakeWord}
-        onChangeStopUtteringWord={onChangeStopUtteringWord}
-        onChangeTerminatorWord={onChangeTerminatorWord}
-        onChangeBeConcise={onChangeBeConcise}
       />
     </div>
   );

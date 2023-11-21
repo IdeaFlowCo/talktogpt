@@ -31,10 +31,11 @@ import {
 } from './constants';
 import { isAndroid } from 'react-device-detect';
 import { initialFlagsState, FlagsActions, flagsReducer } from './reducers/flags';
-import { ControlsActions, controlsReducer, initialControlsState } from './reducers/controls';
-import { createSettings, updateSettings, useSettingsByUser } from 'util/db';
+import { updateSettings, useSettingsByUser } from 'util/db';
 import ChatMessage from 'components/atoms/ChatMessage';
 import GoogleSTTPill from 'components/atoms/GoogleSTTPill';
+import { GoogleSttControlsState } from 'types/googleChat';
+import { useMutation } from 'react-query';
 
 const TEXT_SEPARATORS = {
   PARAGRAPH_BREAK: '\n\n',
@@ -46,9 +47,21 @@ interface WordRecognized {
   text: string;
 }
 
+const initialControlsState: GoogleSttControlsState = {
+  speakingRate: 1,
+  autoStopTimeout: STOP_TIMEOUT,
+  isAutoStop: true,
+  isWhisperEnabled: true,
+  wakeKeywords: WAKE_WORDS,
+  stopUtteringWords: STOP_UTTERING_WORDS,
+  terminatorKeywords: TERMINATOR_WORDS,
+  terminatorWaitTime: TERMINATOR_WORD_TIMEOUT,
+  beConcise: true,
+};
+
 export const GoogleSttChat = () => {
   const auth = useAuth();
-  const userSettings = useSettingsByUser();
+  const { data: userSettings, refetch } = useSettingsByUser(auth.user?.id);
   const audioContextRef = useRef<AudioContext>();
   const audioInputRef = useRef<MediaStreamAudioSourceNode>();
   const autoStopRef = useRef<NodeJS.Timeout>();
@@ -89,17 +102,18 @@ export const GoogleSttChat = () => {
     isWhisperPrepared
   }, flagsDispatch] = useReducer(flagsReducer, initialFlagsState);
 
-  const [{
-    autoStopTimeout,
-    speakingRate,
-    isAutoStop,
-    isWhisperEnabled,
-    terminatorWaitTime,
-    wakeKeywords,
-    stopUtteringWords,
-    terminatorKeywords,
-    beConcise
-  }, controlsDispatch] = useReducer(controlsReducer, initialControlsState);
+  const {
+    autoStopTimeout = STOP_TIMEOUT,
+    speakingRate = 1,
+    isAutoStop = true,
+    isWhisperEnabled = true,
+    terminatorWaitTime = TERMINATOR_WORD_TIMEOUT,
+    wakeKeywords = WAKE_WORDS,
+    stopUtteringWords = STOP_UTTERING_WORDS,
+    terminatorKeywords = TERMINATOR_WORDS,
+    beConcise = true,
+  } = userSettings?.settings ? userSettings.settings : initialControlsState
+
 
   const { recording, transcript, startRecording, stopRecording } = useWhisper({
     apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
@@ -109,6 +123,11 @@ export const GoogleSttChat = () => {
     },
   });
 
+  const updateSettingsMutation = useMutation(updateSettings, {
+    onSuccess: () => {
+      refetch();
+    },
+  });
 
   const prepareUseWhisper = async () => {
     if (!isWhisperPrepared) {
@@ -346,7 +365,6 @@ export const GoogleSttChat = () => {
 
   const onSpeechRecognized = async (data: WordRecognized) => {
     try {
-      const { data: settings } = await userSettings.refetch();
       interimRef.current += ` ${data.text}`;
       setInterim(data.text);
 
@@ -361,14 +379,14 @@ export const GoogleSttChat = () => {
 
       // Detect starting keyword
       if (!isUtteringRef.current) {
-        detectStartingKeyword(interimRef.current, settings[0].settings.wakeKeywords ?? wakeKeywords)
+        detectStartingKeyword(interimRef.current, userSettings?.settings?.wakeKeywords ?? wakeKeywords)
       }
       // Stop the uttering if the user says the keyword to stop
-      stopUtteringIfKeywordDetected(interimRef.current, settings[0].settings.stopUtteringWords ?? stopUtteringWords)
+      stopUtteringIfKeywordDetected(interimRef.current, userSettings?.settings?.stopUtteringWords ?? stopUtteringWords)
 
       // Detect end keyword and stop recording if detected in case that was the last word
       if (!isUtteringRef.current) {
-        sendRequestIfTerminatorKeywordDetected(interimRef.current, interimsRef.current, settings[0].settings.terminatorKeywords ?? terminatorKeywords)
+        sendRequestIfTerminatorKeywordDetected(interimRef.current, interimsRef.current, userSettings?.settings?.terminatorKeywords ?? terminatorKeywords)
       }
 
       const reversedInterims = interimsRef.current[interimsRef.current.length - 1] ?? '';
@@ -504,26 +522,23 @@ export const GoogleSttChat = () => {
     });
   }
 
-  const toggleIsAutoStop = (value: boolean) => {
-    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, isAutoStop: value } });
-    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, isAutoStop: value } })
+  const toggleIsAutoStop = async (value: boolean) => {
+    const newSettings = { ...userSettings, user_id: auth.user?.id, settings: { ...userSettings.settings, isAutoStop: value } }
+    await updateSettingsMutation.mutateAsync(newSettings);
   }
 
-  const makeAutoStopTimeoutFaster = () => {
+  const makeAutoStopTimeoutFaster = async () => {
     const autoStopTimeoutValue = autoStopTimeout - 1 <= 0 ? 1 : autoStopTimeout - 1
-    controlsDispatch({
-      type: ControlsActions.UPDATE_SETTINGS,
-      values: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeoutValue }
-    })
-    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeoutValue } })
+    const newSettings = { ...userSettings, user_id: auth.user?.id, settings: { ...userSettings.settings, autoStopTimeout: autoStopTimeoutValue } }
+    await updateSettingsMutation.mutateAsync(newSettings);
   }
 
-  const makeAutoStopTimeoutSlower = () => {
-    controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeout + 1 } })
-    updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: autoStopTimeout + 1 } })
+  const makeAutoStopTimeoutSlower = async () => {
+    const newSettings = { ...userSettings, user_id: auth.user?.id, settings: { ...userSettings.settings, autoStopTimeout: autoStopTimeout + 1 } }
+    await updateSettingsMutation.mutateAsync(newSettings);
   }
 
-  const runVoiceCommand = (voiceCommand: VoiceCommand) => {
+  const runVoiceCommand = async (voiceCommand: VoiceCommand) => {
     const action = getVoiceCommandAction(voiceCommand);
     switch (action?.type) {
       case 'SET_IS_AUTO_STOP':
@@ -538,8 +553,8 @@ export const GoogleSttChat = () => {
 
       case 'SET_AUTO_STOP_TIMEOUT':
         if (typeof action.value === 'number') {
-          controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...userSettings.data[0].settings, autoStopTimeout: action.value } })
-          updateSettings({ ...userSettings.data[0], settings: { ...userSettings.data[0].settings, autoStopTimeout: action.value } })
+          const newSettings = { ...userSettings, user_id: auth.user?.id, settings: { ...userSettings.settings, autoStopTimeout: action.value } }
+          await updateSettingsMutation.mutateAsync(newSettings);
         }
 
         if (typeof action.value === 'string' && action.value === 'faster') {
@@ -587,6 +602,7 @@ export const GoogleSttChat = () => {
       speechRef.current.text = '';
     }
     flagsDispatch({ type: FlagsActions.START_LISTENING });
+    prepareSpeechUttering();
     if (isWhisperEnabled) {
       await prepareUseWhisper();
     }
@@ -756,41 +772,27 @@ export const GoogleSttChat = () => {
     }
   };
 
-  const createOrUpdateUserSettings = useCallback(() => {
-    if (auth.user?.id && userSettings?.data?.length <= 0) {
-      createSettings({
-        settings: {
-          autoStopTimeout: STOP_TIMEOUT,
-          speakingRate: 1,
-          isAutoStop: true,
-          isWhisperEnabled: true,
-          terminatorWaitTime: 1,
-          wakeKeywords: WAKE_WORDS,
-          stopUtteringWords: STOP_UTTERING_WORDS,
-          terminatorKeywords: TERMINATOR_WORDS
-        }, user_id: auth.user?.id
-      })
-    }
-
-    if (auth.user?.id && userSettings?.data?.length > 0) {
-      controlsDispatch({
-        type: ControlsActions.UPDATE_SETTINGS, values: {
-          autoStopTimeout: userSettings.data[0].settings.autoStopTimeout ?? STOP_TIMEOUT,
-          speakingRate: userSettings.data[0].settings.speakingRate ?? 1,
-          isAutoStop: userSettings.data[0].settings.isAutoStop ?? true,
-          isWhisperEnabled: userSettings.data[0].settings.isWhisperEnabled ?? true,
-          terminatorWaitTime: userSettings.data[0].settings.terminatorWaitTime ?? TERMINATOR_WORD_TIMEOUT,
-          wakeKeywords: userSettings.data[0].settings.wakeKeywords ?? WAKE_WORDS,
-          stopUtteringWords: userSettings.data[0].settings.stopUtteringWords ?? STOP_UTTERING_WORDS,
-          terminatorKeywords: userSettings.data[0].settings.terminatorKeywords ?? TERMINATOR_WORDS
-        }
-      })
-    }
-  }, [auth.user?.id, userSettings.data])
-
-  useEffect(() => {
-    createOrUpdateUserSettings();
-  }, [createOrUpdateUserSettings])
+  // useEffect(() => {
+  //   console.log({ userSettings, isLoadingSettings, isSuccess })
+  //   const updateUserSettings = async () => {
+  //     if (auth.user?.id && (!userSettings || typeof userSettings === "undefined") && !isLoadingSettings) {
+  //       await createSettingsMutation.mutateAsync({
+  //         user_id: auth.user.id,
+  //         settings: {
+  //           autoStopTimeout: STOP_TIMEOUT,
+  //           speakingRate: 1,
+  //           isAutoStop: true,
+  //           isWhisperEnabled: true,
+  //           terminatorWaitTime: 1,
+  //           wakeKeywords: WAKE_WORDS,
+  //           stopUtteringWords: STOP_UTTERING_WORDS,
+  //           terminatorKeywords: TERMINATOR_WORDS
+  //         },
+  //       })
+  //     }
+  //   };
+  //   updateUserSettings();
+  // }, [auth.user.id, createSettingsMutation, userSettings, isLoadingSettings])
 
   useEffect(() => {
     if (firstMessage && storedMessagesRef.current.length === 1)
@@ -837,9 +839,6 @@ export const GoogleSttChat = () => {
     // }
     // })
 
-    // window.addEventListener('blur', () => {
-    //   console.log("BYE BYE SOCKET")
-    // })
     window.addEventListener('message', handleStopUttering);
 
     return () => {
@@ -895,101 +894,14 @@ export const GoogleSttChat = () => {
     }
   }, [speakingRate]);
 
-  useLayoutEffect(() => {
-    if (chatRef.current || showBlueBubbleChat) {
+  useEffect(() => {
+    if (chatRef.current) {
       // auto scroll when there is new message
-      chatRef.current.scrollTop = chatRef.current.scrollHeight + 50;
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
-  }, [messages, showBlueBubbleChat]);
+  }, [messages, interim]);
 
-  const onChangeAutoStopTimeout = (value: number) => {
-    userSettings.refetch().then(({ data }) => {
-      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, autoStopTimeout: value } })
-      updateSettings({ ...data[0], settings: { ...data[0].settings, autoStopTimeout: value } })
-    }).catch((error) => {
-      console.error(error)
-    })
-  }
 
-  const onChangeIsAutoStop = (value: boolean) => {
-    userSettings.refetch().then(({ data }) => {
-      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, isAutoStop: value } })
-      updateSettings({ ...data[0], settings: { ...data[0].settings, isAutoStop: value } })
-    }).catch((error) => {
-      console.error(error)
-    })
-  }
-
-  const onChangeIsWhisperEnabled = (value: boolean) => {
-    userSettings.refetch().then(({ data }) => {
-      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, isWhisperEnabled: value } })
-      updateSettings({ ...data[0], settings: { ...data[0].settings, isWhisperEnabled: value } })
-    }).catch((error) => {
-      console.error(error)
-    })
-  }
-
-  const onChangeSpeakingRate = (value: number) => {
-    userSettings.refetch().then(({ data }) => {
-      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, speakingRate: value } })
-      updateSettings({ ...data[0], settings: { ...data[0].settings, speakingRate: value } })
-      if (isAndroid && globalThis.ReactNativeWebView) {
-        globalThis.ReactNativeWebView.postMessage(
-          JSON.stringify({
-            type: 'speaking-rate',
-            data: value,
-          })
-        );
-      }
-    }).catch((error) => {
-      console.error(error)
-    })
-  }
-
-  const onChangeTerminatorWaitTime = (value: number) => {
-    userSettings.refetch().then(({ data }) => {
-      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, terminatorWaitTime: value } })
-      updateSettings({ ...data[0], settings: { ...data[0].settings, terminatorWaitTime: value } })
-    }).catch((error) => {
-      console.error(error)
-    })
-  }
-
-  const onChangeWakeWord = (value: string) => {
-    userSettings.refetch().then(({ data }) => {
-      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, wakeKeywords: value } })
-      updateSettings({ ...data[0], settings: { ...data[0].settings, wakeKeywords: value } })
-    }).catch((error) => {
-      console.error(error)
-    })
-  }
-
-  const onChangeStopUtteringWord = (value: string) => {
-    userSettings.refetch().then(({ data }) => {
-      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, stopUtteringWords: value } })
-      updateSettings({ ...data[0], settings: { ...data[0].settings, stopUtteringWords: value } })
-    }).catch((error) => {
-      console.error(error)
-    })
-  }
-
-  const onChangeTerminatorWord = (value: string) => {
-    userSettings.refetch().then(({ data }) => {
-      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, terminatorKeywords: value } })
-      updateSettings({ ...data[0], settings: { ...data[0].settings, terminatorKeywords: value } })
-    }).catch((error) => {
-      console.error(error)
-    })
-  }
-
-  const onChangeBeConcise = (value: boolean) => {
-    userSettings.refetch().then(({ data }) => {
-      controlsDispatch({ type: ControlsActions.UPDATE_SETTINGS, values: { ...data[0].settings, beConcise: value } })
-      updateSettings({ ...data[0], settings: { ...data[0].settings, beConcise: value } })
-    }).catch((error) => {
-      console.error(error)
-    })
-  }
 
 
   const defaultMessage: Message = {
@@ -1029,26 +941,8 @@ export const GoogleSttChat = () => {
         </div>
       </div>
       <GoogleSTTPill
-        autoStopTimeout={autoStopTimeout}
-        isAutoStop={isAutoStop}
         isUttering={isUttering}
-        speakingRate={speakingRate}
-        isWhisperEnabled={isWhisperEnabled}
-        terminatorWaitTime={terminatorWaitTime}
-        wakeKeywords={wakeKeywords}
-        stopUtteringWords={stopUtteringWords}
-        terminatorKeywords={terminatorKeywords}
-        beConcise={beConcise}
-        onChangeAutoStopTimeout={onChangeAutoStopTimeout}
-        onChangeIsAutoStop={onChangeIsAutoStop}
-        onChangeSpeakingRate={onChangeSpeakingRate}
         onToggleUttering={toggleUttering}
-        onChangeIsWhisperEnabled={onChangeIsWhisperEnabled}
-        onChangeTerminatorWaitTime={onChangeTerminatorWaitTime}
-        onChangeWakeWord={onChangeWakeWord}
-        onChangeStopUtteringWord={onChangeStopUtteringWord}
-        onChangeTerminatorWord={onChangeTerminatorWord}
-        onChangeBeConcise={onChangeBeConcise}
       />
       {noti ? (
         <Alert

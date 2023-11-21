@@ -1,11 +1,47 @@
 import { Menu, Transition } from '@headlessui/react';
+import { initialControlsState } from 'components/chat/reducers/controls';
 import { Fragment } from 'react';
+import { isAndroid } from 'react-device-detect';
+import { useMutation } from 'react-query';
+import { useAuth } from 'util/auth';
+import { updateSettings, useSettingsByUser } from 'util/db';
 
 export default function SpeakingRateDropdown({
-  speakingRate,
-  onChangeSpeakingRate,
   disabled,
 }) {
+
+  const auth = useAuth();
+  const { data: userSettings, refetch } = useSettingsByUser(auth.user?.id,);
+
+  const {
+    speakingRate = 1,
+  } = userSettings?.settings ? userSettings.settings : initialControlsState
+
+  const { mutateAsync, isLoading: isLoadingUpdate } = useMutation(updateSettings, {
+    onSuccess: () => {
+      refetch();
+    },
+  });
+
+  const onChangeSpeakingRate = async (value) => {
+
+    const newSettings = {
+      user_id: auth.user?.id,
+      settings: {
+        ...userSettings?.settings, speakingRate: value
+      }
+    }
+    await mutateAsync(newSettings);
+    if (isAndroid && globalThis.ReactNativeWebView) {
+      globalThis.ReactNativeWebView.postMessage(
+        JSON.stringify({
+          type: 'speaking-rate',
+          data: value,
+        })
+      );
+    }
+  }
+
   return (
     <div className='text-right'>
       <Menu as='div' className='relative inline-block text-left'>
@@ -21,12 +57,12 @@ export default function SpeakingRateDropdown({
           <Menu.Items className='absolute bottom-12 mt-2 w-24 origin-bottom divide-y divide-gray-100 rounded-md bg-white p-2 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none'>
             <div className='p-1'>
               {getSpeakigRates().map(({ label, value }) => (
-                <Menu.Item key={value} disabled={disabled}>
+                <Menu.Item key={value} disabled={disabled || isLoadingUpdate}>
                   <button
                     className={`${value === speakingRate
                       ? 'bg-[#96BE64] text-white'
                       : 'text-gray-900'
-                      } ${disabled ? 'opacity-20' : ''} group flex w-full flex-col items-center rounded-md px-2 py-2 text-sm`}
+                      } ${disabled || isLoadingUpdate ? 'opacity-20' : ''} group flex w-full flex-col items-center rounded-md px-2 py-2 text-sm`}
                     onClick={() => onChangeSpeakingRate?.(value)}
                   >
                     {label}
@@ -37,7 +73,7 @@ export default function SpeakingRateDropdown({
           </Menu.Items>
         </Transition>
         <div className='min-w-[64px]'>
-          <Menu.Button disabled={disabled} className={`${disabled ? 'opacity-20' : ''} inline-flex w-full justify-center rounded-md bg-opacity-20 px-4 py-2 text-sm font-medium text-black hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75`}>
+          <Menu.Button disabled={disabled || isLoadingUpdate} className={`${disabled || isLoadingUpdate ? 'opacity-20' : ''} inline-flex w-full justify-center rounded-md bg-opacity-20 px-4 py-2 text-sm font-medium text-black hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75`}>
             {`${speakingRate}x`}
           </Menu.Button>
         </div>
