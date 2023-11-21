@@ -1025,7 +1025,6 @@ export function useSettingsByUser(userId: string) {
         .from("settings")
         .select('*')
         .eq("user_id", userId)
-        .order("created_at", { ascending: false })
         .single()
         .then(handle),
         { enabled: !!userId }
@@ -1044,16 +1043,32 @@ export async function createSettings(data) {
 
 // Update settings
 export async function updateSettings(data) {
-  console.log('data', data);
-  const response = await supabase
-    .from("settings")
-    .update(data)
-    .eq("user_id", data.user_id)
-    .single()
-    .then(handle);
-  // Invalidate and refetch queries that could have old data
-  await client.invalidateQueries(["settings", { userId: data.user_id }]);
-  return response;
+  const {data: settings} =  await supabase
+  .from("settings")
+  .select('*')
+  .eq("user_id", data.user_id)
+  .single()
+
+  if (settings) {
+    const response = await supabase
+      .from("settings")
+      .update(data)
+      .eq("user_id", data.user_id)
+      .single()
+      .then(handle);
+    // Invalidate and refetch queries that could have old data
+    await client.invalidateQueries(["settings", { userId: data.user_id }]);
+    return response;
+  }else{
+    const response = await supabase
+      .from("settings")
+      .insert(data)
+      .single()
+      .then(handle);
+    // Invalidate and refetch queries that could have old data
+    await client.invalidateQueries(["settings", { userId: data.user_id }]);
+    return response;
+  }
 }
 
 /**** HELPERS ****/

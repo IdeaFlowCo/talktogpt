@@ -58,14 +58,16 @@ export default function SettingsDropdown({
 
   const onChangeAutoStopTimeout = async (value) => {
     const newSettings = {
-      ...userSettings, settings: {
-        isAutoStop,
-        isWhisperEnabled,
+      ...userSettings,
+      user_id: auth.user?.id,
+      settings: {
+        isAutoStop: valueAutoStop,
+        isWhisperEnabled: valueIsWhisperEnabled,
         terminatorWaitTime,
         wakeKeywords,
         stopUtteringWords,
         terminatorKeywords,
-        beConcise,
+        beConcise: valueBeConcise,
         autoStopTimeout: value
       }
     }
@@ -75,7 +77,9 @@ export default function SettingsDropdown({
   const onChangeIsAutoStop = async (value) => {
     setValueAutoStop(value);
     const newSettings = {
-      ...userSettings, settings: {
+      ...userSettings,
+      user_id: auth.user?.id,
+      settings: {
         autoStopTimeout,
         isWhisperEnabled,
         terminatorWaitTime,
@@ -92,7 +96,9 @@ export default function SettingsDropdown({
   const onChangeIsWhisperEnabled = async (value) => {
     setValueIsWhisperEnabled(value);
     const newSettings = {
-      ...userSettings, settings: {
+      ...userSettings,
+      user_id: auth.user?.id,
+      settings: {
         autoStopTimeout,
         isAutoStop,
         terminatorWaitTime,
@@ -108,7 +114,9 @@ export default function SettingsDropdown({
 
   const onChangeTerminatorWaitTime = async (value) => {
     const newSettings = {
-      ...userSettings, settings: {
+      ...userSettings,
+      user_id: auth.user?.id,
+      settings: {
         autoStopTimeout,
         isAutoStop,
         isWhisperEnabled,
@@ -124,7 +132,9 @@ export default function SettingsDropdown({
 
   const onChangeWakeWord = async (value) => {
     const newSettings = {
-      ...userSettings, settings: {
+      ...userSettings,
+      user_id: auth.user?.id,
+      settings: {
         autoStopTimeout,
         isAutoStop,
         isWhisperEnabled,
@@ -140,7 +150,9 @@ export default function SettingsDropdown({
 
   const onChangeStopUtteringWord = async (value) => {
     const newSettings = {
-      ...userSettings, settings: {
+      ...userSettings,
+      user_id: auth.user?.id,
+      settings: {
         autoStopTimeout,
         isAutoStop,
         isWhisperEnabled,
@@ -156,7 +168,9 @@ export default function SettingsDropdown({
 
   const onChangeTerminatorWord = async (value) => {
     const newSettings = {
-      ...userSettings, settings: {
+      ...userSettings,
+      user_id: auth.user?.id,
+      settings: {
         autoStopTimeout,
         isAutoStop,
         isWhisperEnabled,
@@ -173,7 +187,9 @@ export default function SettingsDropdown({
   const onChangeBeConcise = async (value) => {
     setValueBeConcise(value);
     const newSettings = {
-      ...userSettings, settings: {
+      ...userSettings,
+      user_id: auth.user?.id,
+      settings: {
         autoStopTimeout,
         isAutoStop,
         isWhisperEnabled,

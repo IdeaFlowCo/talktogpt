@@ -31,7 +31,7 @@ import {
 } from './constants';
 import { isAndroid } from 'react-device-detect';
 import { initialFlagsState, FlagsActions, flagsReducer } from './reducers/flags';
-import { createSettings, updateSettings, useSettingsByUser } from 'util/db';
+import { updateSettings, useSettingsByUser } from 'util/db';
 import ChatMessage from 'components/atoms/ChatMessage';
 import GoogleSTTPill from 'components/atoms/GoogleSTTPill';
 import { GoogleSttControlsState } from 'types/googleChat';
@@ -103,16 +103,17 @@ export const GoogleSttChat = () => {
   }, flagsDispatch] = useReducer(flagsReducer, initialFlagsState);
 
   const {
-    autoStopTimeout,
-    speakingRate,
-    isAutoStop,
-    isWhisperEnabled,
-    terminatorWaitTime,
-    wakeKeywords,
-    stopUtteringWords,
-    terminatorKeywords,
-    beConcise
+    autoStopTimeout = STOP_TIMEOUT,
+    speakingRate = 1,
+    isAutoStop = true,
+    isWhisperEnabled = true,
+    terminatorWaitTime = TERMINATOR_WORD_TIMEOUT,
+    wakeKeywords = WAKE_WORDS,
+    stopUtteringWords = STOP_UTTERING_WORDS,
+    terminatorKeywords = TERMINATOR_WORDS,
+    beConcise = true,
   } = userSettings?.settings ? userSettings.settings : initialControlsState
+
 
   const { recording, transcript, startRecording, stopRecording } = useWhisper({
     apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
@@ -123,12 +124,6 @@ export const GoogleSttChat = () => {
   });
 
   const updateSettingsMutation = useMutation(updateSettings, {
-    onSuccess: () => {
-      refetch();
-    },
-  });
-
-  const createSettingsMutation = useMutation(createSettings, {
     onSuccess: () => {
       refetch();
     },
@@ -520,18 +515,18 @@ export const GoogleSttChat = () => {
   }
 
   const toggleIsAutoStop = async (value: boolean) => {
-    const newSettings = { ...userSettings, settings: { ...userSettings.settings, isAutoStop: value } }
+    const newSettings = { ...userSettings, user_id: auth.user?.id, settings: { ...userSettings.settings, isAutoStop: value } }
     await updateSettingsMutation.mutateAsync(newSettings);
   }
 
   const makeAutoStopTimeoutFaster = async () => {
     const autoStopTimeoutValue = autoStopTimeout - 1 <= 0 ? 1 : autoStopTimeout - 1
-    const newSettings = { ...userSettings, settings: { ...userSettings.settings, autoStopTimeout: autoStopTimeoutValue } }
+    const newSettings = { ...userSettings, user_id: auth.user?.id, settings: { ...userSettings.settings, autoStopTimeout: autoStopTimeoutValue } }
     await updateSettingsMutation.mutateAsync(newSettings);
   }
 
   const makeAutoStopTimeoutSlower = async () => {
-    const newSettings = { ...userSettings, settings: { ...userSettings.settings, autoStopTimeout: autoStopTimeout + 1 } }
+    const newSettings = { ...userSettings, user_id: auth.user?.id, settings: { ...userSettings.settings, autoStopTimeout: autoStopTimeout + 1 } }
     await updateSettingsMutation.mutateAsync(newSettings);
   }
 
@@ -550,7 +545,7 @@ export const GoogleSttChat = () => {
 
       case 'SET_AUTO_STOP_TIMEOUT':
         if (typeof action.value === 'number') {
-          const newSettings = { ...userSettings, settings: { ...userSettings.settings, autoStopTimeout: action.value } }
+          const newSettings = { ...userSettings, user_id: auth.user?.id, settings: { ...userSettings.settings, autoStopTimeout: action.value } }
           await updateSettingsMutation.mutateAsync(newSettings);
         }
 
@@ -833,9 +828,6 @@ export const GoogleSttChat = () => {
     // }
     // })
 
-    // window.addEventListener('blur', () => {
-    //   console.log("BYE BYE SOCKET")
-    // })
     window.addEventListener('message', handleStopUttering);
 
     return () => {
