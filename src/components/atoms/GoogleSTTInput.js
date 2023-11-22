@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import useSound from 'use-sound';
 import MicButton from './MicButton';
 import Loading from 'assets/icons/Loading';
+import SiriWave from "siriwave";
 
 export default function GoogleSTTInput({
   isListening, // listening to wakeword
@@ -22,16 +23,7 @@ export default function GoogleSTTInput({
   const [playSonar] = useSound('/sounds/sonar.mp3', { volume: 0.3, interrupt: true });
 
   useEffect(() => {
-    if (!isRecording && isWhisperPrepared && !isSpeaking && isListening && isLoading) {
-      setTimeout(() => {
-        playSonar();
-      }, 0);
-    }
-  }, [isListening, isLoading, isRecording, isSpeaking, isWhisperPrepared, playSonar])
-
-  useEffect(() => {
     const initWaveform = async () => {
-      const SiriWave = (await import('siriwave')).default;
       waveRef.current = new SiriWave({
         container: document.getElementById('siri-wave'),
         width: 80,
@@ -41,19 +33,31 @@ export default function GoogleSTTInput({
         autostart: true,
       });
     };
-    if (isRecording && !waveRef.current) {
-      setTimeout(() => {
-        playBubble();
-      }, 0);
-      initWaveform();
-    }
+    initWaveform();
     return () => {
+      console.log("AQUi")
       waveRef.current = null;
       const siriWave = document.getElementById('siri-wave');
       if (siriWave) {
-        siriWave.innerHTML = '';
+        siriWave.className = 'hidden';
       }
     };
+  }, []);
+
+  useEffect(() => {
+    if (!isRecording && isWhisperPrepared && !isSpeaking && isListening && isLoading) {
+      setTimeout(() => {
+        playSonar();
+      }, 0);
+    }
+  }, [isListening, isLoading, isRecording, isSpeaking, isWhisperPrepared, playSonar])
+
+  useEffect(() => {
+    if (isRecording) {
+      setTimeout(() => {
+        playBubble();
+      }, 0);
+    }
   }, [isRecording, playBubble]);
 
   useEffect(() => {
