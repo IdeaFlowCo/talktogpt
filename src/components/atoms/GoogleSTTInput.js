@@ -35,7 +35,6 @@ export default function GoogleSTTInput({
     };
     initWaveform();
     return () => {
-      console.log("AQUi")
       waveRef.current = null;
       const siriWave = document.getElementById('siri-wave');
       if (siriWave) {

@@ -1,6 +1,7 @@
 import MicIcon from "assets/icons/MicIcon";
 import MicWaveIcon from "assets/icons/MicWaveIcon";
 import { Tooltip } from "@nextui-org/react";
+import { useMemo } from "react";
 
 const MicButton = ({
   isRecording,
@@ -12,9 +13,23 @@ const MicButton = ({
   onStopListening,
   onStopUttering,
   onStartListening }) => {
+
+
+  const greenMicIcon = useMemo(() => {
+    return isRecording && isWhisperPrepared && !isLoading
+  }, [isRecording, isWhisperPrepared, isLoading])
+
+  const yellowMicIcon = useMemo(() => {
+    return !(isRecording && isWhisperPrepared) && (isSpeaking || (!isSpeaking && isListening));
+  }, [isRecording, isWhisperPrepared, isSpeaking, isListening])
+
+  // const offMicIcon = useMemo(() => {
+  //   return !(isRecording && isWhisperPrepared) && !isSpeaking && !isListening;
+  // }, [isRecording, isWhisperPrepared, isSpeaking, isListening])
+
   return (
     <div className='w-[3.125rem]'>
-      {isRecording && isWhisperPrepared && !isLoading && (
+      {greenMicIcon ? (
         <button
           onClick={async () => {
             await onForceStopRecording();
@@ -23,41 +38,19 @@ const MicButton = ({
         >
           {isSpeaking ? <MicWaveIcon /> : <MicIcon />}
         </button>
-      )}
-
-      {!(isRecording && isWhisperPrepared) && isSpeaking && (
-        <button
-          onClick={async () => {
-            onStopUttering?.();
-            onStopListening?.();
-          }}
-          disabled={isLoading}
-          className={`rounded-full border ${isListening ? 'bg-[#F2C80F]' : 'bg-[#96BE64]'
-            } p-3`}
-        >
-          <MicWaveIcon />
-        </button>
-      )}
-
-      {!(isRecording && isWhisperPrepared) &&
-        !isSpeaking &&
-        isListening && (
+      ) : (
+        yellowMicIcon ? (
           <button
-            onClick={() => {
+            onClick={async () => {
               onStopUttering?.();
               onStopListening?.();
             }}
             disabled={isLoading}
-            className='rounded-full border bg-[#F2C80F] p-3'
+            className={`rounded-full border bg-[#F2C80F] p-3`}
           >
-            <MicIcon />
+            {isSpeaking ? <MicWaveIcon /> : <MicIcon />}
           </button>
-        )}
-
-      {!(isRecording && isWhisperPrepared) &&
-        !isSpeaking &&
-        !isListening && (
-
+        ) : (
           <div className="relative">
             <Tooltip content="Tap on me to have a chat!" isOpen showArrow
               classNames={{
@@ -83,9 +76,8 @@ const MicButton = ({
               <MicIcon color='#4F46DC' />
             </button>
           </div>
-
         )
-      }
+      )}
     </div>
   )
 }

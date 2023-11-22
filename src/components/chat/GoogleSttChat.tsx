@@ -247,30 +247,24 @@ export const GoogleSttChat = () => {
 
 
   const forceStopRecording = async () => {
+    flagsDispatch({ type: FlagsActions.START_LOADING });
+    flagsDispatch({ type: FlagsActions.FORCE_STOP_RECORDING });
+    flagsDispatch({ type: FlagsActions.STOP_RECORDING });
     if (isWhisperEnabled) {
-      flagsDispatch({ type: FlagsActions.START_LOADING });
       await stopRecording();
-    } else {
-      flagsDispatch({ type: FlagsActions.STOP_RECORDING });
     }
     const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(interimsRef.current.join(' ')), wakewordsRef.current)
     const requestWithoutKeywords = removeTerminatorKeyword(requestWithoutInitialKeywords, terminatorwordsRef.current)
     setOpenaiRequest(requestWithoutKeywords)
-
     startKeywordDetectedRef.current = false;
     endKeywordDetectedRef.current = false;
-    flagsDispatch({ type: FlagsActions.FORCE_STOP_RECORDING });
     stopUttering();
   };
 
   const onAutoStop = () => {
     endKeywordDetectedRef.current = undefined;
     stopAutoStopTimeout();
-    forceStopRecording().then(() => {
-      console.log("TalkToGPT stop recording")
-    }).catch((error) => {
-      console.error(error)
-    });
+    forceStopRecording()
   };
 
   const processStartKeyword = () => {
@@ -339,9 +333,8 @@ export const GoogleSttChat = () => {
     startKeywordDetectedRef.current = false;
     if (isWhisperEnabled) {
       await stopRecording();
-    } else {
-      flagsDispatch({ type: FlagsActions.STOP_RECORDING });
     }
+    flagsDispatch({ type: FlagsActions.STOP_RECORDING });
   }
 
   const sendRequestIfTerminatorKeywordDetected = () => {
@@ -422,7 +415,7 @@ export const GoogleSttChat = () => {
       stopUtteringIfKeywordDetected(interimRef.current, stopUtteringWordsRef.current)
 
       // Detect end keyword and stop recording if detected in case that was the last word
-      if (!isUtteringRef.current) {
+      if (!isUtteringRef.current && data.isFinal) {
         sendRequestIfTerminatorKeywordDetected()
       }
 
@@ -527,6 +520,10 @@ export const GoogleSttChat = () => {
     });
 
     socketRef.current.on('disconnect', () => { });
+
+    socketRef.current.on('googleCloudStreamError', (error) => {
+      showErrorMessage(error);
+    });
   };
 
 
@@ -950,6 +947,7 @@ export const GoogleSttChat = () => {
     role: 'assistant',
     id: 'initial-message',
   };
+
   return (
     <div className='flex h-full w-screen flex-col'>
       <div
@@ -999,7 +997,7 @@ export const GoogleSttChat = () => {
         isListening={isListening}
         isLoading={isLoading}
         isSpeaking={isSpeaking}
-        isRecording={(isRecording || recording) && startKeywordDetectedRef.current}
+        isRecording={isRecording && startKeywordDetectedRef.current}
         isWhisperPrepared={true}
         query={input}
         onChangeQuery={handleInputChange}
