@@ -165,6 +165,7 @@ export const GoogleSttChat = () => {
 
   const onStopUttering = () => {
     lastSpeechIndexRef.current += 1;
+    setInterim('');
     if (storedMessagesRef.current.length > lastSpeechIndexRef.current) {
       startUttering(storedMessagesRef.current[lastSpeechIndexRef.current]);
     } else {
@@ -723,6 +724,7 @@ export const GoogleSttChat = () => {
         })
       );
     }
+    setInterim('');
     endKeywordDetectedRef.current = undefined;
     flagsDispatch({ type: FlagsActions.STOP_UTTERING });
     isUtteringRef.current = false;

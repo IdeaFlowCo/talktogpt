@@ -3,6 +3,7 @@ import AppearAnimation from './BasicAppearAnimation';
 import { BE_CONCISE, WAKE_WORDS } from 'components/chat/constants';
 import { ChatBubbleOvalLeftEllipsisIcon } from '@heroicons/react/20/solid';
 import { removeInitialKeyword, sanitizeText } from 'components/chat/methods';
+import intersection from 'lodash/intersection'
 
 interface ChatMessageProps {
   message: string;
@@ -28,7 +29,8 @@ function ChatMessage({ message, sender, loading, finalMessage = '', wakeKeywords
 
   const hideInterimText = useMemo(() => {
     if (finalMessageWithoutWakeWords.length > 0) {
-      return sanitizeText(finalMessageWithoutWakeWords).includes(sanitizeText(filteredMessage));
+      const intersectionLength = intersection(sanitizeText(finalMessageWithoutWakeWords).split(' '), sanitizeText(filteredMessage).split(' ')).length;
+      return intersectionLength / filteredMessage.split(' ').length > 0.7;
     }
     return false;
   }, [filteredMessage, finalMessageWithoutWakeWords]);
