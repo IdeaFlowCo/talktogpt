@@ -6,9 +6,7 @@ import { useMutation } from 'react-query';
 import { useAuth } from 'util/auth';
 import { updateSettings, useSettingsByUser } from 'util/db';
 
-export default function SpeakingRateDropdown({
-  disabled,
-}) {
+export default function SpeakingRateDropdown() {
 
   const auth = useAuth();
   const { data: userSettings, refetch } = useSettingsByUser(auth.user?.id,);
@@ -57,12 +55,12 @@ export default function SpeakingRateDropdown({
           <Menu.Items className='absolute bottom-12 mt-2 w-24 origin-bottom divide-y divide-gray-100 rounded-md bg-white p-2 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none'>
             <div className='p-1'>
               {getSpeakigRates().map(({ label, value }) => (
-                <Menu.Item key={value} disabled={disabled || isLoadingUpdate}>
+                <Menu.Item key={value}>
                   <button
                     className={`${value === speakingRate
                       ? 'bg-[#96BE64] text-white'
                       : 'text-gray-900'
-                      } ${disabled || isLoadingUpdate ? 'opacity-20' : ''} group flex w-full flex-col items-center rounded-md px-2 py-2 text-sm`}
+                      } group flex w-full flex-col items-center rounded-md px-2 py-2 text-sm`}
                     onClick={() => onChangeSpeakingRate?.(value)}
                   >
                     {label}
@@ -73,7 +71,7 @@ export default function SpeakingRateDropdown({
           </Menu.Items>
         </Transition>
         <div className='min-w-[64px]'>
-          <Menu.Button disabled={disabled || isLoadingUpdate} className={`${disabled || isLoadingUpdate ? 'opacity-20' : ''} inline-flex w-full justify-center rounded-md bg-opacity-20 px-4 py-2 text-sm font-medium text-black hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75`}>
+          <Menu.Button className={`inline-flex w-full justify-center rounded-md bg-opacity-20 px-4 py-2 text-sm font-medium text-black hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75`}>
             {`${speakingRate}x`}
           </Menu.Button>
         </div>

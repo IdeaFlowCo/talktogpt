@@ -14,9 +14,7 @@ import { Tabs, Tab } from "@nextui-org/react";
 import { isMobile } from 'react-device-detect';
 
 
-export default function SettingsDropdown({
-  disabled,
-}) {
+export default function SettingsDropdown() {
   let [referenceElement, setReferenceElement] = useState();
   let [popperElement, setPopperElement] = useState();
   let { styles, attributes } = usePopper(referenceElement, popperElement, { placement: 'top' });
@@ -214,8 +212,7 @@ export default function SettingsDropdown({
       </Transition>
       <Popover.Button
         ref={setReferenceElement}
-        disabled={disabled || isLoading}
-        className={`${disabled || isLoading ? 'opacity-20' : ''} inline-flex w-full justify-center rounded-md bg-opacity-20 px-4 py-2 text-sm font-medium text-black hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 outline-none`}
+        className={`inline-flex w-full justify-center rounded-md bg-opacity-20 px-4 py-2 text-sm font-medium text-black hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 outline-none`}
       >
         <SettingIcon />
       </Popover.Button>
