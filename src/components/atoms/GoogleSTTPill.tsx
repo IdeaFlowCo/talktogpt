@@ -1,23 +1,45 @@
+import { useState } from 'react';
 import SettingsDropdown from './SettingsDropdown';
 import SpeakingRateDropdown from './SpeakingRateDropdown';
+import { Modal, ModalBody, ModalContent } from '@nextui-org/react';
+import { SettingIcon } from 'assets/icons/SettingIcon';
 
 export default function GoogleSTTPill({
   isUttering,
   onToggleUttering,
 }) {
 
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const onToggleSettings = () => {
+    setIsSettingsOpen(!isSettingsOpen);
+  }
+
   return (
-    <div className='flex h-10 min-w-[50%] flex-row items-center justify-center gap-4 self-center rounded-full bg-gray-300 sm:min-w-[25%]'>
-      <SpeakingRateDropdown />
-      <button onClick={onToggleUttering}>
-        {isUttering ? (
-          <StopIcon className='h-6 w-6' />
-        ) : (
-          <PlayIcon className='h-6 w-6' />
-        )}
-      </button>
-      <SettingsDropdown />
-    </div>
+    <>
+      <div className='flex h-10 min-w-[50%] flex-row items-center justify-center gap-4 self-center rounded-full bg-gray-300 sm:min-w-[25%]'>
+        <SpeakingRateDropdown />
+        <button onClick={onToggleUttering}>
+          {isUttering ? (
+            <StopIcon className='h-6 w-6' />
+          ) : (
+            <PlayIcon className='h-6 w-6' />
+          )}
+        </button>
+        <div className='min-w-[64px]'>
+          <button onClick={onToggleSettings} className='inline-flex w-full justify-center rounded-md bg-opacity-20 px-4 py-2 text-sm font-medium text-black hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75'>
+            <SettingIcon />
+          </button>
+        </div>
+      </div>
+      <Modal isOpen={isSettingsOpen} onClose={onToggleSettings} placement='center'>
+        <ModalContent>
+          <ModalBody>
+            <SettingsDropdown />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    </>
   );
 }
 
