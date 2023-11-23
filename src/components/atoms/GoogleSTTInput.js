@@ -44,12 +44,12 @@ export default function GoogleSTTInput({
   }, []);
 
   useEffect(() => {
-    if (!isRecording && isWhisperPrepared && !isSpeaking && isListening && isLoading) {
+    if (!isRecording && isWhisperPrepared && isListening && isLoading) {
       setTimeout(() => {
         playSonar();
       }, 0);
     }
-  }, [isListening, isLoading, isRecording, isSpeaking, isWhisperPrepared, playSonar])
+  }, [isListening, isLoading, isRecording, isWhisperPrepared, playSonar])
 
   useEffect(() => {
     if (isRecording) {
