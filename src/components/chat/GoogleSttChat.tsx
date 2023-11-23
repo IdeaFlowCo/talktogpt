@@ -254,8 +254,8 @@ export const GoogleSttChat = () => {
     if (isWhisperEnabled) {
       await stopRecording();
     }
-    const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(interimsRef.current.join(' ')), wakewordsRef.current)
-    const requestWithoutKeywords = removeTerminatorKeyword(requestWithoutInitialKeywords, terminatorwordsRef.current)
+    // const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(interimsRef.current.join(' ')), wakewordsRef.current)
+    const requestWithoutKeywords = removeTerminatorKeyword(interimsRef.current.join(' '), terminatorwordsRef.current)
     setOpenaiRequest(requestWithoutKeywords)
     startKeywordDetectedRef.current = false;
     endKeywordDetectedRef.current = false;
@@ -304,8 +304,8 @@ export const GoogleSttChat = () => {
       })
     }
     setOpenaiRequest(prev => {
-      const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(`${prev} ${interim}`), wakewordsRef.current)
-      const requestWithoutKeywords = removeTerminatorKeyword(requestWithoutInitialKeywords, terminatorwordsRef.current)
+      // const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(`${prev} ${interim}`), wakewordsRef.current)
+      const requestWithoutKeywords = removeTerminatorKeyword(`${prev} ${interim}`, terminatorwordsRef.current)
       return requestWithoutKeywords
     })
     endKeywordDetectedRef.current = false;
@@ -416,7 +416,7 @@ export const GoogleSttChat = () => {
       stopUtteringIfKeywordDetected(interimRef.current, stopUtteringWordsRef.current)
 
       // Detect end keyword and stop recording if detected in case that was the last word
-      if (!isUtteringRef.current && data.isFinal) {
+      if (startKeywordDetectedRef.current && data.isFinal) {
         sendRequestIfTerminatorKeywordDetected()
       }
 

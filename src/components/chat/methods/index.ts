@@ -91,14 +91,14 @@ export const trimText = (text: string): string => {
 };
 
 export const removeInitialKeyword = (text: string, wakeWords: string): string => {
-  let lowerCaseText = sanitizeText(text);
+  let textToReturn = text;
+  const lowerCaseText = sanitizeText(text);
   const wake_words = wakeWords?.split(',') || WAKE_WORDS?.split(',');
   wake_words.forEach((keyword) => {
     const last_keyword_chunk = keyword.split(' ').reverse()[0];
     const keywordIndex = lowerCaseText.indexOf(sanitizeText(last_keyword_chunk));
-
     if (keywordIndex !== -1) {
-      lowerCaseText = lowerCaseText.substring(keywordIndex + last_keyword_chunk.length);
+      textToReturn = lowerCaseText.substring(keywordIndex + last_keyword_chunk.length);
     }
   });
   return lowerCaseText;
