@@ -34,13 +34,19 @@ export default async function handler(req: Request, res: Response) {
     return new Response('Missing messages, userId.', { status: 400 });
   }
 
-  const response = await openai.createChatCompletion({
-    model: 'gpt-3.5-turbo',
-    stream: true,
-    messages,
-  });
-  // Convert the response into a friendly text-stream
-  const stream = OpenAIStream(response);
-  // Respond with the stream
-  return new StreamingTextResponse(stream);
+  try {
+    const response = await openai.createChatCompletion({
+      model: 'gpt-3.5-turbo',
+      stream: true,
+      messages,
+    });
+  
+    // Convert the response into a friendly text-stream
+    const stream = OpenAIStream(response);
+    // Respond with the stream
+    return new StreamingTextResponse(stream);  
+  } catch (error) {
+    return new Response(`There was an error with OpenAI. Please, try again.`, { status: 500 });
+  }
+  
 }
