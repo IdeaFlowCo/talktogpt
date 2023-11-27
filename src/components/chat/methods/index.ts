@@ -155,7 +155,7 @@ export const whisperTranscript = async (base64: string): Promise<{status: string
 };
 
 export const detectEndKeyword = (interimText: string, terminatorKeywords: string): boolean => {
-  let isKeywordDetected = false;
+    let isKeywordDetected = false;
   const end_words = terminatorKeywords.split(',') || TERMINATOR_WORDS.split(',');
   for (const keyword of end_words) {
     isKeywordDetected ||= sanitizeText(interimText).includes(sanitizeText(keyword));

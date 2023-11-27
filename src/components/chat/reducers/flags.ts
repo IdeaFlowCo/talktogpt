@@ -35,6 +35,7 @@ export enum FlagsActions {
   STOP_TRANSCRIPTION = 'stop_transcription',
   FORCE_STOP_RECORDING = 'force_stop_recording',
   WAKEWORD_RECOGNISED = 'wakeword_recognised',
+  CANCEL_REQUEST = 'cancel_request',
 }
 
 export const initialFlagsState = {
@@ -168,6 +169,16 @@ export function flagsReducer(state: GoogleSttFlagsState, action: GoogleSttAction
       ...state,
       isTranscriptionDone: false,
       isRecording: true,
+    };
+  }
+  if (action.type === FlagsActions.CANCEL_REQUEST) {
+    return {
+      ...state,
+      isLoading: false,
+      isRecording: false,
+      isUttering: false,
+      isSending: false,
+      isTranscriptionDone: true,
     };
   }
   throw Error('Unknown action.');

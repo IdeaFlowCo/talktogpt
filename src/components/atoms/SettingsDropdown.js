@@ -11,7 +11,7 @@ import { Tabs, Tab } from "@nextui-org/react";
 import { isMobile } from 'react-device-detect';
 
 
-export default function SettingsDropdown() {
+export default function SettingsDropdown({ cancelRequest }) {
   const [valueBeConcise, setValueBeConcise] = useState(true);
   const [valueAutoStop, setValueAutoStop] = useState(true);
   const [valueIsWhisperEnabled, setValueIsWhisperEnabled] = useState(true);
@@ -30,7 +30,7 @@ export default function SettingsDropdown() {
     beConcise = true
   } = userSettings?.settings ? userSettings.settings : initialControlsState
 
-  const { mutateAsync, isLoading } = useMutation(updateSettings, {
+  const { mutateAsync } = useMutation(updateSettings, {
     onSuccess: () => {
       refetch();
     },
@@ -73,6 +73,7 @@ export default function SettingsDropdown() {
   }
 
   const onChangeIsWhisperEnabled = async (value) => {
+    cancelRequest();
     setValueIsWhisperEnabled(value);
     const newSettings = {
       ...userSettings,
