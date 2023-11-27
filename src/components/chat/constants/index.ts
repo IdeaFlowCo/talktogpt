@@ -1,7 +1,7 @@
 export const WAKE_WORDS = 'over';
 export const STOP_UTTERING_WORDS = 'pause';
 export const TERMINATOR_WORDS = 'terminator';
-export const TERMINATOR_WORD_TIMEOUT = 1; // 1 second
+export const TERMINATOR_WORD_TIMEOUT = 0; // 0 seconds
 export const STOP_TIMEOUT = 2; // 2 seconds
 export const BE_CONCISE = 'Please, be concise.';
 

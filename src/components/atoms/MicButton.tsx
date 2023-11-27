@@ -4,6 +4,7 @@ import { Tooltip } from "@nextui-org/react";
 import { useMemo } from "react";
 
 const MicButton = ({
+  isMicReady,
   isRecording,
   isWhisperPrepared,
   isLoading,
@@ -16,12 +17,12 @@ const MicButton = ({
 
 
   const greenMicIcon = useMemo(() => {
-    return isRecording && isWhisperPrepared && !isLoading
-  }, [isRecording, isWhisperPrepared, isLoading])
+    return isRecording && isWhisperPrepared && !isLoading && isMicReady
+  }, [isRecording, isWhisperPrepared, isLoading, isMicReady])
 
   const yellowMicIcon = useMemo(() => {
-    return !(isRecording && isWhisperPrepared) && (isSpeaking || (!isSpeaking && isListening));
-  }, [isRecording, isWhisperPrepared, isSpeaking, isListening])
+    return !(isRecording && isWhisperPrepared) && (isSpeaking || (!isSpeaking && isListening) && isMicReady);
+  }, [isRecording, isWhisperPrepared, isSpeaking, isListening, isMicReady])
 
   // const offMicIcon = useMemo(() => {
   //   return !(isRecording && isWhisperPrepared) && !isSpeaking && !isListening;
