@@ -91,7 +91,7 @@ export const GoogleSttChat = () => {
   const [interim, setInterim] = useState<string>('');
   const [openaiRequest, setOpenaiRequest] = useState<string>('');
   const [showBlueBubbleChat, setShowBlueBubbleChat] = useState<boolean>(false);
-  const [isMicReady, setIsMicReady] = useState<boolean>(true);
+  const [showIsMicReadyModal, setShowIsMicReadyModal] = useState<boolean>(null);
 
   const [noti, setNoti] = useState<{
     type: 'error' | 'success';
@@ -632,7 +632,7 @@ export const GoogleSttChat = () => {
   };
 
   const onClickMicButton = async () => {
-    setIsMicReady(false);
+    setShowIsMicReadyModal(true);
     if (!isAndroid || (isAndroid && !globalThis.ReactNativeWebView)) {
       prepareSpeechUttering();
       speechRef.current.text = '';
@@ -661,7 +661,7 @@ export const GoogleSttChat = () => {
     });
 
     if (streamRef.current) {
-      setIsMicReady(true);
+      setShowIsMicReadyModal(false);
       // if (!isAndroid || (isAndroid && !globalThis.ReactNativeWebView)) {
       //   speechRef.current.lang = 'en-US';
       //   speechRef.current.text = 'The microphone is ready to use';
@@ -977,7 +977,7 @@ export const GoogleSttChat = () => {
         className='flex w-full flex-1 items-start justify-center overflow-auto p-4 sm:pt-10'
       >
         <div className='container flex max-w-3xl flex-col gap-3'>
-          <Modal isOpen={!isMicReady} placement='center' size='xs'>
+          <Modal isOpen={showIsMicReadyModal} placement='center' size='xs'>
             <ModalContent>
               <ModalBody>
                 <div className="flex flex-col items-center justify-center py-20 px-10 gap-4 text-center">
@@ -1029,7 +1029,7 @@ export const GoogleSttChat = () => {
         isLoading={isLoading}
         isSpeaking={isSpeaking}
         isRecording={isRecording && startKeywordDetectedRef.current}
-        isMicReady={isMicReady}
+        isMicReady={!showIsMicReadyModal}
         isWhisperPrepared={true}
         query={input}
         onChangeQuery={handleInputChange}
