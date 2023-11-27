@@ -1036,7 +1036,7 @@ export const GoogleSttChat = () => {
         onStartListening={onClickMicButton}
         onStopListening={stopListening}
         onStopUttering={stopUttering}
-        onSubmitQuery={submitTranscript}
+        onSubmitQuery={!startKeywordDetectedRef.current ? submitTranscript : null}
       />
     </div>
   );
