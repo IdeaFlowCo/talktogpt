@@ -201,7 +201,7 @@ export const GoogleSttChat = () => {
     onError: (sendDetectedTranscriptError) => {
       console.error({ sendDetectedTranscriptError });
       flagsDispatch({ type: FlagsActions.STOP_SENDING_CHAT });
-      showErrorMessage(NOTI_MESSAGES.gpt.error);
+      showErrorMessage("There was an error with OpenAI. Please, try again.");
     },
     onFinish: (message) => {
       transcript.blob = undefined;
@@ -434,7 +434,7 @@ export const GoogleSttChat = () => {
   }): string | null => {
     if (transcribed.status === 'error') {
       console.warn('24MB file size limit reached!');
-      showErrorMessage(transcribed.message);
+      showErrorMessage('The file size limit is 24MB. Please speak again.');
       flagsDispatch({ type: FlagsActions.STOP_SENDING_CHAT });
       setInterim('');
       setShowBlueBubbleChat(false);
@@ -757,7 +757,6 @@ export const GoogleSttChat = () => {
       return;
     } catch (sendDetectedTranscriptError) {
       flagsDispatch({ type: FlagsActions.STOP_SENDING_CHAT });
-      showErrorMessage(NOTI_MESSAGES.gpt.error);
       return;
     }
   };
@@ -1011,11 +1010,4 @@ export const GoogleSttChat = () => {
       />
     </div>
   );
-};
-
-const NOTI_MESSAGES = {
-  gpt: {
-    loading: 'hang on, still working',
-    error: 'Call to GPT Failed',
-  },
 };
