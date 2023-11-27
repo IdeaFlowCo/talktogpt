@@ -4,7 +4,7 @@ import Alert from 'components/atoms/Alert';
 import GoogleSTTInput from 'components/atoms/GoogleSTTInput';
 import InterimHistory from 'components/atoms/InterimHistory';
 import type { Harker } from 'hark';
-import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import io, { type Socket } from 'socket.io-client';
 import { type VoiceCommand } from 'types/useWhisperTypes';
 import { useAuth } from 'util/auth';
@@ -36,6 +36,9 @@ import ChatMessage from 'components/atoms/ChatMessage';
 import GoogleSTTPill from 'components/atoms/GoogleSTTPill';
 import { GoogleSttControlsState } from 'types/googleChat';
 import { useMutation } from 'react-query';
+import { Modal, ModalBody, ModalContent } from '@nextui-org/react';
+import Loading from 'assets/icons/Loading';
+import MicWaveIcon from 'assets/icons/MicWaveIcon';
 
 const TEXT_SEPARATORS = {
   PARAGRAPH_BREAK: '\n\n',
@@ -88,6 +91,7 @@ export const GoogleSttChat = () => {
   const [interim, setInterim] = useState<string>('');
   const [openaiRequest, setOpenaiRequest] = useState<string>('');
   const [showBlueBubbleChat, setShowBlueBubbleChat] = useState<boolean>(false);
+  const [isMicReady, setIsMicReady] = useState<boolean>(true);
 
   const [noti, setNoti] = useState<{
     type: 'error' | 'success';
@@ -513,20 +517,15 @@ export const GoogleSttChat = () => {
 
   const prepareSocket = async () => {
     socketRef.current = io(TALKTOGPT_SOCKET_ENDPOINT);
-
     socketRef.current.on('connect', () => { });
-
     socketRef.current.on('receive_audio_text', (data) => {
       onSpeechRecognized(data);
     });
-
     socketRef.current.on('disconnect', () => { });
-
     socketRef.current.on('googleCloudStreamError', (error) => {
       showErrorMessage(error);
     });
   };
-
 
   const releaseHark = () => {
     // remove hark event listeners
@@ -632,7 +631,8 @@ export const GoogleSttChat = () => {
     autoStopRef.current = setTimeout(onAutoStop, autoStopTimeout * 1000);
   };
 
-  const startListening = async () => {
+  const onClickMicButton = async () => {
+    setIsMicReady(false);
     if (!isAndroid || (isAndroid && !globalThis.ReactNativeWebView)) {
       prepareSpeechUttering();
       speechRef.current.text = '';
@@ -646,6 +646,7 @@ export const GoogleSttChat = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
     }
+
     streamRef.current = await navigator.mediaDevices.getUserMedia({
       audio: {
         deviceId: 'default',
@@ -654,9 +655,26 @@ export const GoogleSttChat = () => {
         channelCount: 1,
         noiseSuppression: true,
         echoCancellation: true,
+        autoGainControl: true,
       },
       video: false,
     });
+
+    if (streamRef.current) {
+      setIsMicReady(true);
+      // if (!isAndroid || (isAndroid && !globalThis.ReactNativeWebView)) {
+      //   speechRef.current.lang = 'en-US';
+      //   speechRef.current.text = 'The microphone is ready to use';
+      //   globalThis.speechSynthesis.speak(speechRef.current);
+      // } else {
+      //   globalThis.ReactNativeWebView.postMessage(
+      //     JSON.stringify({
+      //       type: 'speaking-start',
+      //       data: 'The microphone is ready to use',
+      //     })
+      //   );
+      // }
+    }
 
     await prepareHark();
 
@@ -679,6 +697,7 @@ export const GoogleSttChat = () => {
     socketRef.current?.emit('startGoogleCloudStream');
 
     processorRef.current.port.onmessage = ({ data: audio }) => {
+      console.log("Socket: " + socketRef.current?.id)
       socketRef.current?.emit('send_audio_data', { audio });
     };
     // if (isWhisperEnabled) {
@@ -958,6 +977,16 @@ export const GoogleSttChat = () => {
         className='flex w-full flex-1 items-start justify-center overflow-auto p-4 sm:pt-10'
       >
         <div className='container flex max-w-3xl flex-col gap-3'>
+          <Modal isOpen={!isMicReady} placement='center' size='xs'>
+            <ModalContent>
+              <ModalBody>
+                <div className="flex flex-col items-center justify-center py-20 px-10 gap-4 text-center">
+                  <div className='rounded-full border bg-[#96BE64] p-3'><MicWaveIcon /></div>
+                  <p>Please, wait until microphone is ready...</p>
+                </div>
+              </ModalBody>
+            </ModalContent>
+          </Modal>
           <ChatMessage
             message={defaultMessage.content}
             sender={defaultMessage.role}
@@ -1000,11 +1029,12 @@ export const GoogleSttChat = () => {
         isLoading={isLoading}
         isSpeaking={isSpeaking}
         isRecording={isRecording && startKeywordDetectedRef.current}
+        isMicReady={isMicReady}
         isWhisperPrepared={true}
         query={input}
         onChangeQuery={handleInputChange}
         onForceStopRecording={forceStopRecording}
-        onStartListening={startListening}
+        onStartListening={onClickMicButton}
         onStopListening={stopListening}
         onStopUttering={stopUttering}
         onSubmitQuery={submitTranscript}

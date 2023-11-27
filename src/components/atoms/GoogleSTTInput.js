@@ -10,6 +10,7 @@ export default function GoogleSTTInput({
   isSpeaking, // when microphone detect sound
   isRecording, // useWhisper start recording
   isWhisperPrepared,
+  isMicReady,
   query,
   onChangeQuery,
   onForceStopRecording,
@@ -107,6 +108,7 @@ export default function GoogleSTTInput({
         </div>
 
         <MicButton
+          isMicReady={isMicReady}
           isListening={isListening}
           isRecording={isRecording}
           isSpeaking={isSpeaking}
