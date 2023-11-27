@@ -7,6 +7,7 @@ import { SettingIcon } from 'assets/icons/SettingIcon';
 export default function GoogleSTTPill({
   isUttering,
   onToggleUttering,
+  cancelRequest
 }) {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -35,7 +36,7 @@ export default function GoogleSTTPill({
       <Modal isOpen={isSettingsOpen} onClose={onToggleSettings} placement='center'>
         <ModalContent>
           <ModalBody>
-            <SettingsDropdown />
+            <SettingsDropdown cancelRequest={cancelRequest} />
           </ModalBody>
         </ModalContent>
       </Modal>

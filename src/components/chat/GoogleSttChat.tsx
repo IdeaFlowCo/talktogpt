@@ -4,7 +4,7 @@ import Alert from 'components/atoms/Alert';
 import GoogleSTTInput from 'components/atoms/GoogleSTTInput';
 import InterimHistory from 'components/atoms/InterimHistory';
 import type { Harker } from 'hark';
-import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import io, { type Socket } from 'socket.io-client';
 import { type VoiceCommand } from 'types/useWhisperTypes';
 import { useAuth } from 'util/auth';
@@ -36,6 +36,7 @@ import ChatMessage from 'components/atoms/ChatMessage';
 import GoogleSTTPill from 'components/atoms/GoogleSTTPill';
 import { GoogleSttControlsState } from 'types/googleChat';
 import { useMutation } from 'react-query';
+import toast from 'react-hot-toast';
 
 const TEXT_SEPARATORS = {
   PARAGRAPH_BREAK: '\n\n',
@@ -83,6 +84,7 @@ export const GoogleSttChat = () => {
   const terminatorwordsRef = useRef<string>(TERMINATOR_WORDS);
   const stopUtteringWordsRef = useRef<string>(STOP_UTTERING_WORDS);
   const speakingRateRef = useRef<number>(1);
+  const isWhisperEnabledRef = useRef<boolean>(false);
 
   const [firstMessage, setFirstMessage] = useState<string | null>(null);
   const [interim, setInterim] = useState<string>('');
@@ -128,7 +130,8 @@ export const GoogleSttChat = () => {
     if (typeof stopUtteringWords !== "undefined" && stopUtteringWords !== null) {
       stopUtteringWordsRef.current = stopUtteringWords;
     }
-  }, [wakeKeywords, terminatorKeywords, stopUtteringWords])
+    isWhisperEnabledRef.current = isWhisperEnabled;
+  }, [wakeKeywords, terminatorKeywords, stopUtteringWords, isWhisperEnabled])
 
 
   const { recording, transcript, startRecording, stopRecording } = useWhisper({
@@ -251,7 +254,7 @@ export const GoogleSttChat = () => {
     flagsDispatch({ type: FlagsActions.START_LOADING });
     flagsDispatch({ type: FlagsActions.FORCE_STOP_RECORDING });
     flagsDispatch({ type: FlagsActions.STOP_RECORDING });
-    if (isWhisperEnabled) {
+    if (isWhisperEnabledRef.current) {
       await stopRecording();
     }
     // const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(interimsRef.current.join(' ')), wakewordsRef.current)
@@ -276,7 +279,7 @@ export const GoogleSttChat = () => {
     setInterim('');
     setNoti(undefined);
     interimsRef.current = [];
-    if (isWhisperEnabled) {
+    if (isWhisperEnabledRef.current) {
       startRecording().then(() => {
         console.log("WHISPER START RECORDING")
       })
@@ -297,7 +300,7 @@ export const GoogleSttChat = () => {
   }
 
   const stopByDetectEndKeyword = () => {
-    if (isWhisperEnabled) {
+    if (isWhisperEnabledRef.current) {
       stopRecording().then(() => {
         console.log("WHISPER STOP RECORDING")
         flagsDispatch({ type: FlagsActions.STOP_RECORDING });
@@ -332,7 +335,7 @@ export const GoogleSttChat = () => {
     setShowBlueBubbleChat(false);
     setInterim('');
     startKeywordDetectedRef.current = false;
-    if (isWhisperEnabled) {
+    if (isWhisperEnabledRef.current) {
       await stopRecording();
     }
     flagsDispatch({ type: FlagsActions.STOP_RECORDING });
@@ -399,7 +402,7 @@ export const GoogleSttChat = () => {
 
       if (data.isFinal && !isUttering) {
         interimsRef.current.push(data.text);
-        // interimRef.current = '';
+        interimRef.current = '';
         setOpenaiRequest((prev) => {
           return `${prev} ${data.text}`;
         });
@@ -409,14 +412,14 @@ export const GoogleSttChat = () => {
       }
 
       // Detect starting keyword
-      if (!isUtteringRef.current) {
+      if (!isUtteringRef.current && !startKeywordDetectedRef.current) {
         detectStartingKeyword(interimRef.current, wakewordsRef.current)
       }
       // Stop the uttering if the user says the keyword to stop
       stopUtteringIfKeywordDetected(interimRef.current, stopUtteringWordsRef.current)
 
       // Detect end keyword and stop recording if detected in case that was the last word
-      if (startKeywordDetectedRef.current && data.isFinal) {
+      if (startKeywordDetectedRef.current) {
         sendRequestIfTerminatorKeywordDetected()
       }
 
@@ -474,7 +477,7 @@ export const GoogleSttChat = () => {
 
   const onTranscribe = async () => {
     let text = ''
-    if (isWhisperEnabled) {
+    if (isWhisperEnabledRef.current) {
       const transcribed = await transcribeAudio(transcript.blob);
       const transcriptionText = handleTranscriptionResults(transcribed);
       if (!transcriptionText) return;
@@ -638,7 +641,7 @@ export const GoogleSttChat = () => {
       speechRef.current.text = '';
     }
     flagsDispatch({ type: FlagsActions.START_LISTENING });
-    if (isWhisperEnabled) {
+    if (isWhisperEnabledRef.current) {
       await prepareUseWhisper();
     }
     await prepareSocket();
@@ -792,6 +795,25 @@ export const GoogleSttChat = () => {
     flagsDispatch({ type: FlagsActions.STOP_SPEAKING });
   };
 
+  const cancelRequest = async () => {
+    if (startKeywordDetectedRef.current) {
+      flagsDispatch({ type: FlagsActions.CANCEL_REQUEST });
+      setInterim('');
+      setShowBlueBubbleChat(false);
+      startKeywordDetectedRef.current = false;
+      endKeywordDetectedRef.current = false;
+      transcript.blob = undefined;
+      if (isWhisperEnabledRef.current)
+        await stopRecording();
+      toast.loading(
+        "The current request has been cancelled because the audio post-process settings has been modified.", {
+        icon: '🚫',
+        duration: 2000
+      }
+      );
+    }
+  }
+
   const cleanUpResources = () => {
     releaseSocket();
     releaseHark();
@@ -807,28 +829,6 @@ export const GoogleSttChat = () => {
       speechRef.current.removeEventListener('end', onStopUttering);
     }
   };
-
-  // useEffect(() => {
-  //   console.log({ userSettings, isLoadingSettings, isSuccess })
-  //   const updateUserSettings = async () => {
-  //     if (auth.user?.id && (!userSettings || typeof userSettings === "undefined") && !isLoadingSettings) {
-  //       await createSettingsMutation.mutateAsync({
-  //         user_id: auth.user.id,
-  //         settings: {
-  //           autoStopTimeout: STOP_TIMEOUT,
-  //           speakingRate: 1,
-  //           isAutoStop: true,
-  //           isWhisperEnabled: true,
-  //           terminatorWaitTime: 1,
-  //           wakeKeywords: WAKE_WORDS,
-  //           stopUtteringWords: STOP_UTTERING_WORDS,
-  //           terminatorKeywords: TERMINATOR_WORDS
-  //         },
-  //       })
-  //     }
-  //   };
-  //   updateUserSettings();
-  // }, [auth.user.id, createSettingsMutation, userSettings, isLoadingSettings])
 
   useEffect(() => {
     if (firstMessage && storedMessagesRef.current.length === 1)
@@ -888,9 +888,9 @@ export const GoogleSttChat = () => {
   const isRequestReadyForTranscription = useCallback(() => {
     return !isSending &&
       !isTranscriptionDone &&
-      ((isWhisperEnabled && !recording && transcript.blob?.size > 44)
-        || (!isWhisperEnabled && !isRecording && openaiRequest.length > 0))
-  }, [isRecording, isSending, isTranscriptionDone, isWhisperEnabled, openaiRequest, recording, transcript.blob?.size])
+      ((isWhisperEnabledRef.current && !recording && transcript.blob?.size > 44)
+        || (!isWhisperEnabledRef.current && !isRecording && openaiRequest.length > 0))
+  }, [isRecording, isSending, isTranscriptionDone, openaiRequest, recording, transcript.blob?.size])
 
   /**
    * check before sending audio blob to Whisper for transcription
@@ -909,14 +909,14 @@ export const GoogleSttChat = () => {
   useEffect(() => {
     if (
       isAutoStop &&
-      ((!isWhisperEnabled && isRecording) || (isWhisperEnabled && recording)) &&
+      ((!isWhisperEnabledRef.current && isRecording) || (isWhisperEnabledRef.current && recording)) &&
       isFinalData &&
       startKeywordDetectedRef.current
     ) {
       startAutoStopTimeout();
     }
     if (
-      (isAutoStop && ((!isWhisperEnabled && !isRecording) || (isWhisperEnabled && !recording))) ||
+      (isAutoStop && ((!isWhisperEnabledRef.current && !isRecording) || (isWhisperEnabledRef.current && !recording))) ||
       !isFinalData ||
       !startKeywordDetectedRef.current
     ) {
@@ -984,6 +984,7 @@ export const GoogleSttChat = () => {
       <GoogleSTTPill
         isUttering={isUttering}
         onToggleUttering={toggleUttering}
+        cancelRequest={cancelRequest}
       />
       {noti ? (
         <Alert
