@@ -1007,7 +1007,7 @@ export const GoogleSttChat = () => {
         onStartListening={startListening}
         onStopListening={stopListening}
         onStopUttering={stopUttering}
-        onSubmitQuery={submitTranscript}
+        onSubmitQuery={!startKeywordDetectedRef.current ? submitTranscript : null}
       />
     </div>
   );
