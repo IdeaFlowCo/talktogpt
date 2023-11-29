@@ -3,6 +3,8 @@ import wordsToNumbers from 'words-to-numbers';
 import { TERMINATOR_WORDS, WAKE_WORDS, VOICE_COMMANDS } from '../constants';
 import { Message } from 'ai';
 
+const ERROR_CODE_EXCEED_MAX_BODY_LIMIT = 413;
+
 type VoiceCommandAction =
   | { type: 'SET_IS_AUTO_STOP'; value: boolean }
   | { type: 'SET_AUTO_STOP_TIMEOUT'; value: number | string }
@@ -127,7 +129,7 @@ export const blobToBase64 = (blob: Blob): Promise<string | null> => {
   });
 };
 
-export const whisperTranscript = async (base64: string): Promise<{status: string, message: string}> => {
+export const whisperTranscript = async (base64: string): Promise<{status: string, message: string, errorCode?: number}> => {
   console.log('WHISPER');
   try {
     const body = {
@@ -147,9 +149,13 @@ export const whisperTranscript = async (base64: string): Promise<{status: string
     }
   } catch (error) {
     console.warn('whisperTranscript', { error });
+    const errorCode = error?.response?.status;
     return {
+      errorCode: error?.response?.status,
       status: 'error',
-      message: `${error?.message}: ${error?.response?.data}`  || '',
+      message: errorCode === ERROR_CODE_EXCEED_MAX_BODY_LIMIT ? 
+        'The audio file has exceeded the maximum size limit (24mb). Please, speak again in shorter periods of time.' : 
+        `${error?.message}: ${error?.response?.data}`  || '',
     }
   }
 };

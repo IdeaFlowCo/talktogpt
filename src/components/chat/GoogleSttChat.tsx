@@ -138,7 +138,7 @@ export const GoogleSttChat = () => {
   }, [wakeKeywords, terminatorKeywords, stopUtteringWords, isWhisperEnabled])
 
 
-  const { recording, transcript, startRecording, stopRecording } = useWhisper({
+  const { transcript, startRecording, stopRecording } = useWhisper({
     apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
     autoTranscribe: false,
     whisperConfig: {
@@ -256,9 +256,7 @@ export const GoogleSttChat = () => {
 
 
   const forceStopRecording = async () => {
-    flagsDispatch({ type: FlagsActions.START_LOADING });
     flagsDispatch({ type: FlagsActions.FORCE_STOP_RECORDING });
-    flagsDispatch({ type: FlagsActions.STOP_RECORDING });
     if (isWhisperEnabledRef.current) {
       await stopRecording();
     }
@@ -276,7 +274,7 @@ export const GoogleSttChat = () => {
     forceStopRecording()
   };
 
-  const processStartKeyword = () => {
+  const processStartKeyword = async () => {
     if (isUtteringRef.current) {
       return
     }
@@ -284,10 +282,9 @@ export const GoogleSttChat = () => {
     setInterim('');
     setNoti(undefined);
     interimsRef.current = [];
+    transcript.blob = undefined;
     if (isWhisperEnabledRef.current) {
-      startRecording().then(() => {
-        console.log("WHISPER START RECORDING")
-      })
+      await startRecording();
     }
     setOpenaiRequest('');
     flagsDispatch({ type: FlagsActions.WAKEWORD_RECOGNISED });
@@ -304,12 +301,10 @@ export const GoogleSttChat = () => {
     return typeof matchWord === 'undefined';
   }
 
-  const stopByDetectEndKeyword = () => {
+  const stopByDetectEndKeyword = async () => {
+    flagsDispatch({ type: FlagsActions.FORCE_STOP_RECORDING });
     if (isWhisperEnabledRef.current) {
-      stopRecording().then(() => {
-        console.log("WHISPER STOP RECORDING")
-        flagsDispatch({ type: FlagsActions.STOP_RECORDING });
-      })
+      await stopRecording();
     }
     setOpenaiRequest(prev => {
       // const requestWithoutInitialKeywords = removeInitialKeyword(sanitizeText(`${prev} ${interim}`), wakewordsRef.current)
@@ -319,7 +314,6 @@ export const GoogleSttChat = () => {
     endKeywordDetectedRef.current = false;
     stopAutoStopTimeout();
     startKeywordDetectedRef.current = false;
-    flagsDispatch({ type: FlagsActions.FORCE_STOP_RECORDING });
     stopUttering();
   }
 
@@ -337,13 +331,13 @@ export const GoogleSttChat = () => {
   }
 
   const stopEmptyRequest = async () => {
+    flagsDispatch({ type: FlagsActions.STOP_RECORDING });
     setShowBlueBubbleChat(false);
     setInterim('');
     startKeywordDetectedRef.current = false;
     if (isWhisperEnabledRef.current) {
       await stopRecording();
     }
-    flagsDispatch({ type: FlagsActions.STOP_RECORDING });
   }
 
   const sendRequestIfTerminatorKeywordDetected = () => {
@@ -439,10 +433,11 @@ export const GoogleSttChat = () => {
   const handleTranscriptionResults = (transcribed: {
     status: string;
     message: string;
+    errorCode?: number;
   }): string | null => {
     if (transcribed.status === 'error') {
-      console.warn('24MB file size limit reached!', transcribed.message);
-      showErrorMessage('The audio file has exceeded the maximum size limit (24mb). Please, speak again in shorter periods of time.');
+      console.error(`Error ${transcribed.errorCode}: ${transcribed.message}`);
+      showErrorMessage(transcribed.message);
       flagsDispatch({ type: FlagsActions.STOP_SENDING_CHAT });
       setInterim('');
       setShowBlueBubbleChat(false);
@@ -701,7 +696,6 @@ export const GoogleSttChat = () => {
     socketRef.current?.emit('startGoogleCloudStream');
 
     processorRef.current.port.onmessage = ({ data: audio }) => {
-      console.log("Socket: " + socketRef.current?.id)
       socketRef.current?.emit('send_audio_data', { audio });
     };
     // if (isWhisperEnabled) {
@@ -822,8 +816,7 @@ export const GoogleSttChat = () => {
       startKeywordDetectedRef.current = false;
       endKeywordDetectedRef.current = false;
       transcript.blob = undefined;
-      if (isWhisperEnabledRef.current)
-        await stopRecording();
+      if (isWhisperEnabledRef.current) { await stopRecording(); }
       toast.loading(
         "The current request has been cancelled because the audio post-process settings has been modified.", {
         icon: '🚫',
@@ -907,9 +900,9 @@ export const GoogleSttChat = () => {
   const isRequestReadyForTranscription = useCallback(() => {
     return !isSending &&
       !isTranscriptionDone &&
-      ((isWhisperEnabledRef.current && !recording && transcript.blob?.size > 44)
+      ((isWhisperEnabledRef.current && !isRecording && transcript.blob?.size > 44)
         || (!isWhisperEnabledRef.current && !isRecording && openaiRequest.length > 0))
-  }, [isRecording, isSending, isTranscriptionDone, openaiRequest, recording, transcript.blob?.size])
+  }, [isRecording, isSending, isTranscriptionDone, openaiRequest, transcript.blob?.size])
 
   /**
    * check before sending audio blob to Whisper for transcription
@@ -928,20 +921,20 @@ export const GoogleSttChat = () => {
   useEffect(() => {
     if (
       isAutoStop &&
-      ((!isWhisperEnabledRef.current && isRecording) || (isWhisperEnabledRef.current && recording)) &&
+      ((!isWhisperEnabledRef.current && isRecording) || (isWhisperEnabledRef.current && isRecording)) &&
       isFinalData &&
       startKeywordDetectedRef.current
     ) {
       startAutoStopTimeout();
     }
     if (
-      (isAutoStop && ((!isWhisperEnabledRef.current && !isRecording) || (isWhisperEnabledRef.current && !recording))) ||
+      (isAutoStop && ((!isWhisperEnabledRef.current && !isRecording) || (isWhisperEnabledRef.current && !isRecording))) ||
       !isFinalData ||
       !startKeywordDetectedRef.current
     ) {
       stopAutoStopTimeout();
     }
-  }, [isAutoStop, isRecording, recording, isFinalData]);
+  }, [isAutoStop, isRecording, isFinalData]);
 
   useEffect(() => {
     if (speakingRate) {
