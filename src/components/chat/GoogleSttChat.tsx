@@ -447,7 +447,7 @@ export const GoogleSttChat = () => {
       return null;
     }
     if (transcribed.status === 'success' && transcribed.message === '') {
-      showErrorMessage('Voice command not detected. Please speak again.');
+      showErrorMessage('The audio request was empty. Please, try again with longer request.');
       flagsDispatch({ type: FlagsActions.STOP_SENDING_CHAT });
       setInterim('');
       setShowBlueBubbleChat(false);
