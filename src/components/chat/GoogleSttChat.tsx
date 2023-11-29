@@ -208,6 +208,7 @@ export const GoogleSttChat = () => {
     onError: (sendDetectedTranscriptError) => {
       console.error({ sendDetectedTranscriptError });
       flagsDispatch({ type: FlagsActions.STOP_SENDING_CHAT });
+      transcript.blob = undefined;
       showErrorMessage("There was an error with OpenAI. Please, try again.");
     },
     onFinish: (message) => {
