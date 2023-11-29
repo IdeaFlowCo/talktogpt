@@ -268,10 +268,10 @@ export const GoogleSttChat = () => {
     stopUttering();
   };
 
-  const onAutoStop = () => {
+  const onAutoStop = async () => {
     endKeywordDetectedRef.current = undefined;
     stopAutoStopTimeout();
-    forceStopRecording()
+    await forceStopRecording();
   };
 
   const processStartKeyword = async () => {
@@ -627,7 +627,11 @@ export const GoogleSttChat = () => {
   };
 
   const startAutoStopTimeout = () => {
-    autoStopRef.current = setTimeout(onAutoStop, autoStopTimeout * 1000);
+    autoStopRef.current = setTimeout(() => {
+      onAutoStop().catch(error => {
+        console.error('An error occurred:', error);
+      });
+    }, autoStopTimeout * 1000);
   };
 
   const onClickMicButton = async () => {
@@ -801,7 +805,6 @@ export const GoogleSttChat = () => {
 
   const onStartSpeaking = () => {
     flagsDispatch({ type: FlagsActions.START_SPEAKING });
-    stopAutoStopTimeout();
   };
 
   const onStopSpeaking = () => {
