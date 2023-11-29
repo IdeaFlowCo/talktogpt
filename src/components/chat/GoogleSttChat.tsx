@@ -440,8 +440,8 @@ export const GoogleSttChat = () => {
     message: string;
   }): string | null => {
     if (transcribed.status === 'error') {
-      console.warn('24MB file size limit reached!');
-      showErrorMessage('The file size limit is 24MB. Please speak again.');
+      console.warn('24MB file size limit reached!', transcribed.message);
+      showErrorMessage('The audio file has exceeded the maximum size limit (24mb). Please, speak again in shorter periods of time.');
       flagsDispatch({ type: FlagsActions.STOP_SENDING_CHAT });
       setInterim('');
       setShowBlueBubbleChat(false);
