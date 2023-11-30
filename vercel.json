@@ -1,8 +1,10 @@
 {
   "functions": {
     "pages/api/**/*.js": {
-      "maxDuration": 10,
-      "maxHttpBufferSize": "25MB"
+      "maxDuration": 10
+    },
+    "pages/api/openai/whisper": {
+      "maxHttpBufferSize": "25mb"
     }
   }
 }
