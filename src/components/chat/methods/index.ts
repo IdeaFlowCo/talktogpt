@@ -131,6 +131,8 @@ export const blobToBase64 = (blob: Blob): Promise<string | null> => {
 
 export const whisperTranscript = async (base64: string): Promise<{status: string, message: string, errorCode?: number}> => {
   console.log('WHISPER');
+  let file = Buffer.from(base64, 'base64');
+    console.log({ filesize: file.byteLength });
   try {
     const body = {
       file: base64,
