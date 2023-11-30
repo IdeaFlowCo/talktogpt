@@ -151,13 +151,16 @@ export const whisperTranscript = async (base64: string): Promise<{status: string
     }
   } catch (error) {
     console.warn('whisperTranscript', { error });
+    console.log(`Error Code: ${error?.response?.status}`)
+    console.log(`Error Message: ${error?.message}`)
+    console.log(`Error Response: ${error?.response?.data}`)
     const errorCode = error?.response?.status;
     return {
       errorCode: error?.response?.status,
       status: 'error',
       message: errorCode === ERROR_CODE_EXCEED_MAX_BODY_LIMIT ? 
         'The audio file has exceeded the maximum size limit (24mb). Please, speak again in shorter periods of time.' : 
-        `${error?.message}: ${error?.response?.data}`  || '',
+        `${error?.message || 'Error'}: ${error?.response?.data || 'Whisper API is not available.'}`,
     }
   }
 };
