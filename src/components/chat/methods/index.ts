@@ -143,7 +143,7 @@ export const whisperTranscript = async (base64: string): Promise<{status: string
     const { default: axios } = await import('axios');
     const response = await axios.post('/api/openai/whisper', JSON.stringify(body), {
       headers,
-      maxBodyLength: 25 * 1024 * 1024,
+      maxBodyLength: Infinity,
     });
     return {
       status: 'success',
@@ -151,9 +151,17 @@ export const whisperTranscript = async (base64: string): Promise<{status: string
     }
   } catch (error) {
     console.warn('whisperTranscript', { error });
-    console.log(`Error Code: ${error?.response?.status}`)
-    console.log(`Error Message: ${error?.message}`)
-    console.log(`Error Response: ${error?.response?.data}`)
+    if (error.response) {
+      console.log(error.response.data);
+      console.log(error.response.status);
+      console.log(error.response.headers);
+    } else if (error.request) {
+      console.log(error.request);
+    } else {
+      console.log('Error', error.message);
+    }
+    console.log(error.config);
+    
     const errorCode = error?.response?.status;
     return {
       errorCode: error?.response?.status,
