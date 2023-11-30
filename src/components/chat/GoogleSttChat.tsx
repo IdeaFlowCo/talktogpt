@@ -471,7 +471,7 @@ export const GoogleSttChat = () => {
     }
 
     // Transcribe the audio
-    const response = await whisperTranscript(base64);
+    const response = await whisperTranscript(base64, auth.user?.id);
     return response;
   };
 

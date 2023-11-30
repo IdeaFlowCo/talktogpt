@@ -2,6 +2,8 @@ import { VoiceCommand } from '../../../types/useWhisperTypes';
 import wordsToNumbers from 'words-to-numbers';
 import { TERMINATOR_WORDS, WAKE_WORDS, VOICE_COMMANDS } from '../constants';
 import { Message } from 'ai';
+import { upload } from '@vercel/blob/client';
+
 
 const ERROR_CODE_EXCEED_MAX_BODY_LIMIT = 413;
 
@@ -129,18 +131,31 @@ export const blobToBase64 = (blob: Blob): Promise<string | null> => {
   });
 };
 
-export const whisperTranscript = async (base64: string): Promise<{status: string, message: string, errorCode?: number}> => {
+export const whisperTranscript = async (base64: string, userId: string): Promise<{status: string, message: string, errorCode?: number}> => {
   console.log('WHISPER');
   let file = Buffer.from(base64, 'base64');
-    console.log({ filesize: file.byteLength });
+  console.log({ filesize: file.byteLength });
+  const audioJsonFile = {
+    user: userId,
+    file: base64,
+  }
+  const audioBlob = new Blob([JSON.stringify(audioJsonFile)], { type: 'application/json' });
+  const audio = new File([ audioBlob ], `${userId}_${Date.now()}.json`);
   try {
+    const { default: axios } = await import('axios');
+    
+    const audioBlob = await upload(audio.name, audio, {
+      access: 'public',
+      handleUploadUrl: '/api/openai/upload',
+    });
+
     const body = {
-      file: base64,
+      file: audioBlob.url,
     };
     const headers = {
       'Content-Type': 'application/json',
     };
-    const { default: axios } = await import('axios');
+    
     const response = await axios.post('/api/openai/whisper', JSON.stringify(body), {
       headers,
       maxBodyLength: Infinity,

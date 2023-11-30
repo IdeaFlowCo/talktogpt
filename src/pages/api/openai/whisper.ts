@@ -10,6 +10,16 @@ export const config = {
   },
 };
 
+async function downloadJsonFile(url: string): Promise<{user: string, file: string}> {
+  try {
+    const response = await axios.get(url);
+    return response.data;
+  } catch (error) {
+    console.error(`Error downloading JSON file: ${error.message}`);
+    throw error;
+  }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -32,10 +42,12 @@ export default async function handler(
   }
 
   try {
-    const base64data = audio.replace('data:audio/mpeg;base64,', '');
+    const audioJsonFile = await downloadJsonFile(audio)
+    const base64data = audioJsonFile.file.replace('data:audio/mpeg;base64,', '');
+    
     let file = Buffer.from(base64data, 'base64');
     console.log({ in: file.byteLength });
-
+    
     const body = new FormData();
     body.append('file', file, { filename: 'speech.mp3' });
     body.append('model', 'whisper-1');
