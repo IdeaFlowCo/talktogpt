@@ -139,19 +139,24 @@ export const whisperTranscript = async (base64: string, userId: string): Promise
     user: userId,
     file: base64,
   }
-  const audioBlob = new Blob([JSON.stringify(audioJsonFile)], { type: 'application/json' });
-  const audio = new File([ audioBlob ], `${userId}_${Date.now()}.json`);
+  
   try {
     const { default: axios } = await import('axios');
-    
-    const audioBlob = await upload(audio.name, audio, {
-      access: 'public',
-      handleUploadUrl: '/api/openai/upload',
-    });
-
     const body = {
-      file: audioBlob.url
+      fileUrl: '',
+      fileBase64: base64
     };
+
+    if (file.byteLength > 1024 * 1024 * 4.5) {
+      const blobFile = new Blob([JSON.stringify(audioJsonFile)], { type: 'application/json' });
+      const audio = new File([ blobFile ], `${userId}_${Date.now()}.json`);
+      const audioBlob = await upload(audio.name, audio, {
+        access: 'public',
+        handleUploadUrl: '/api/openai/upload',
+      });
+      body.fileUrl = audioBlob.url;
+    }
+    
     const headers = {
       'Content-Type': 'application/json',
     };
