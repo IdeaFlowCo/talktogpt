@@ -24,7 +24,7 @@ export default async function handler(req: Request, res: Response) {
   console.log('requesting /api/openai/stream');
 
   const { messages, userId }: OpenAIStreamRequestBody = await req.json();
-  console.log({ messages, userId });
+  
 
   // TODO: uncomment when supabase work again
   if (!messages || !userId) {

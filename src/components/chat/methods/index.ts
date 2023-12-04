@@ -150,7 +150,7 @@ export const whisperTranscript = async (base64: string, userId: string): Promise
     });
 
     const body = {
-      file: audioBlob.url,
+      file: audioBlob.url
     };
     const headers = {
       'Content-Type': 'application/json',
@@ -167,9 +167,7 @@ export const whisperTranscript = async (base64: string, userId: string): Promise
   } catch (error) {
     console.warn('whisperTranscript', { error });
     if (error.response) {
-      console.log(error.response.data);
-      console.log(error.response.status);
-      console.log(error.response.headers);
+      console.error(error.response.data?.error?.message);
     } else if (error.request) {
       console.log(error.request);
     } else {
@@ -183,7 +181,7 @@ export const whisperTranscript = async (base64: string, userId: string): Promise
       status: 'error',
       message: errorCode === ERROR_CODE_EXCEED_MAX_BODY_LIMIT ? 
         'The audio file has exceeded the maximum size limit (24mb). Please, speak again in shorter periods of time.' : 
-        `${error?.message || 'Error'}: ${error?.response?.data || 'Whisper API is not available.'}`,
+        'There was an error during your request. Please, try again.',
     }
   }
 };

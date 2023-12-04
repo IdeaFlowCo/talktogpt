@@ -24,6 +24,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+
   if (req.method !== 'POST') {
     return res.status(400).json({
       error: {
@@ -31,7 +32,9 @@ export default async function handler(
       },
     });
   }
+
   const audio = req.body.file;
+
   if (!audio || typeof audio !== 'string') {
     res.status(400).json({
       error: {
@@ -51,18 +54,19 @@ export default async function handler(
     const body = new FormData();
     body.append('file', file, { filename: 'speech.mp3' });
     body.append('model', 'whisper-1');
-    body.append('temperature', '0.1');
+    body.append('temperature', 0.1);
     body.append('language', 'en');
     const headers = {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       'Content-Type': 'multipart/form-data',
     };
+    
     const response = await axios.post(
       'https://api.openai.com/v1/audio/transcriptions',
       body,
       { headers }
     );
-    const { text } = await response.data;
+    const { text } = response.data;
     console.log('onTrascribing', { text });
     if (text) {
       res.status(200).json({ text });

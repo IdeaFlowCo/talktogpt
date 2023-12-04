@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import AppearAnimation from './BasicAppearAnimation';
-import { BE_CONCISE, WAKE_WORDS } from 'components/chat/constants';
+import { BE_CONCISE_PROMPT, WAKE_WORDS } from 'components/chat/constants';
 import { ChatBubbleOvalLeftEllipsisIcon } from '@heroicons/react/20/solid';
 import { removeInitialKeyword, sanitizeText } from 'components/chat/methods';
 import intersection from 'lodash/intersection'
@@ -15,7 +15,7 @@ interface ChatMessageProps {
 
 function ChatMessage({ message, sender, loading, finalMessage = '', wakeKeywords = '' }: Readonly<ChatMessageProps>) {
   const filteredMessage = useMemo(() => {
-    const indexOfBeConcise = message.indexOf(BE_CONCISE);
+    const indexOfBeConcise = message.indexOf(BE_CONCISE_PROMPT);
     let filteredMessage = message;
     if (indexOfBeConcise !== -1 && sender === 'user') {
       filteredMessage = message.substring(0, indexOfBeConcise);

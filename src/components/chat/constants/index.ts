@@ -3,7 +3,8 @@ export const STOP_UTTERING_WORDS = 'pause';
 export const TERMINATOR_WORDS = 'terminator';
 export const TERMINATOR_WORD_TIMEOUT = 0; // 0 seconds
 export const STOP_TIMEOUT = 2; // 2 seconds
-export const BE_CONCISE = 'Please, be concise.';
+export const PROMPT_SYSTEM = 'You are a great conversationalist, who uses punctuation marks very well and uses non-violent communication extremely well.'
+export const BE_CONCISE_PROMPT = 'You must be really concise in your responses.';
 
 export const VOICE_COMMANDS = {
   OFF_AUTO_STOP: {
