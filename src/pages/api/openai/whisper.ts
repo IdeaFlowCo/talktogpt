@@ -32,21 +32,24 @@ export default async function handler(
       },
     });
   }
-
-  const audio = req.body.file;
-
-  if (!audio || typeof audio !== 'string') {
+  const audioUrl = req.body.file;
+  const audioBase64 = req.body.fileBase64;
+  
+  if ((!audioUrl || typeof audioUrl !== 'string') && (!audioBase64 || typeof audioBase64 !== 'string')) {
     res.status(400).json({
       error: {
-        message: 'Please send valid speech data in base64.',
+        message: 'Please send valid speech data.',
       },
     });
     return;
   }
 
   try {
-    const audioJsonFile = await downloadJsonFile(audio)
-    const base64data = audioJsonFile.file.replace('data:audio/mpeg;base64,', '');
+    let base64data = audioBase64;
+    if (audioUrl) {
+      const audioJsonFile = await downloadJsonFile(audioUrl)
+      base64data = audioJsonFile.file.replace('data:audio/mpeg;base64,', '');
+    } 
     
     let file = Buffer.from(base64data, 'base64');
     console.log({ in: file.byteLength });
