@@ -21,13 +21,15 @@ import {
   whisperTranscript,
 } from './methods';
 import {
-  BE_CONCISE,
   TERMINATOR_WORDS,
   STOP_TIMEOUT,
   TALKTOGPT_SOCKET_ENDPOINT,
   WAKE_WORDS,
   STOP_UTTERING_WORDS,
   TERMINATOR_WORD_TIMEOUT,
+  PROMPT_SYSTEM,
+  BE_CONCISE_PROMPT,
+
 } from './constants';
 import { isAndroid } from 'react-device-detect';
 import { initialFlagsState, FlagsActions, flagsReducer } from './reducers/flags';
@@ -205,6 +207,13 @@ export const GoogleSttChat = () => {
 
   const { messages, append, input, setInput, handleInputChange } = useChat({
     api: '/api/openai/stream',
+    initialMessages: [
+      {
+        id: 'system',
+        role: 'system',
+        content: PROMPT_SYSTEM
+      }
+    ],
     onError: (sendDetectedTranscriptError) => {
       console.error({ sendDetectedTranscriptError });
       flagsDispatch({ type: FlagsActions.STOP_SENDING_CHAT });
@@ -766,7 +775,7 @@ export const GoogleSttChat = () => {
 
     try {
       const data: CreateMessage = {
-        content: `${text} ${beConcise ? BE_CONCISE : ''}`,
+        content: `${text} ${beConcise ? BE_CONCISE_PROMPT : ''}`,
         role: 'user',
       };
 
@@ -988,11 +997,13 @@ export const GoogleSttChat = () => {
             sender={defaultMessage.role}
           />
           {messagesSplitByLine.map((message, index) => (
-            <ChatMessage
+
+            message.role !== 'system' && <ChatMessage
               key={`${message.id}_${index}`}
               message={message.content}
               sender={message.role}
             />
+
           ))}
 
           {showBlueBubbleChat ? (
