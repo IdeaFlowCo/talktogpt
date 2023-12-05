@@ -155,6 +155,7 @@ export const whisperTranscript = async (base64: string, userId: string): Promise
         handleUploadUrl: '/api/openai/upload',
       });
       body.fileUrl = audioBlob.url;
+      body.fileBase64 = '';
     }
     
     const headers = {
