@@ -32,10 +32,10 @@ export default async function handler(
       },
     });
   }
-  const audioUrl = req.body.file;
+  const audioUrl = req.body.fileUrl;
   const audioBase64 = req.body.fileBase64;
   
-  if ((!audioUrl || typeof audioUrl !== 'string') && (!audioBase64 || typeof audioBase64 !== 'string')) {
+  if (!audioUrl && !audioBase64) { 
     res.status(400).json({
       error: {
         message: 'Please send valid speech data.',

@@ -147,7 +147,7 @@ export const whisperTranscript = async (base64: string, userId: string): Promise
       fileBase64: base64
     };
 
-    if (file.byteLength > 1024 * 1024 * 4.5) {
+    if (file.byteLength > 1000 * 1000 * 4) {
       const blobFile = new Blob([JSON.stringify(audioJsonFile)], { type: 'application/json' });
       const audio = new File([ blobFile ], `${userId}_${Date.now()}.json`);
       const audioBlob = await upload(audio.name, audio, {
