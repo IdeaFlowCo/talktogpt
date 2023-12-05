@@ -32,7 +32,7 @@ export default async function handler(
       },
     });
   }
-  const audioUrl = req.body.file;
+  const audioUrl = req.body.fileUrl;
   const audioBase64 = req.body.fileBase64;
   
   if (!audioUrl && !audioBase64) { 
